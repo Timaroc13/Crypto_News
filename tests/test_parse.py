@@ -1,0 +1,56 @@
+from fastapi.testclient import TestClient
+
+from crypto_news_parser.main import app
+
+
+client = TestClient(app)
+
+
+def test_parse_returns_schema_fields() -> None:
+    resp = client.post("/parse", json={"text": "BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval."})
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert "event_type" in data
+    assert "schema_version" in data
+    assert "model_version" in data
+    assert 0.0 <= data["impact_score"] <= 1.0
+    assert 0.0 <= data["confidence"] <= 1.0
+
+
+def test_parse_no_match_returns_unknown() -> None:
+    resp = client.post("/parse", json={"text": "I ate breakfast and went for a walk."})
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "UNKNOWN"
+
+
+def test_parse_rejects_empty_text() -> None:
+    resp = client.post("/parse", json={"text": "   "})
+    assert resp.status_code == 422
+    body = resp.json()
+    assert "error" in body
+
+
+def test_parse_rejects_too_large() -> None:
+    resp = client.post("/parse", json={"text": "x" * 20001})
+    assert resp.status_code in {413, 422}
+
+
+def test_parse_invalid_json_returns_400() -> None:
+    resp = client.post(
+        "/parse",
+        content=b"{not valid json}",
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 400
+    assert "error" in resp.json()
+
+
+def test_parse_non_json_content_type_returns_415() -> None:
+    resp = client.post(
+        "/parse",
+        content=b"text=hello",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert resp.status_code == 415
+    assert "error" in resp.json()

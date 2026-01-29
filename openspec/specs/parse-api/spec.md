@@ -1,0 +1,54 @@
+# Capability: Parse API (v1)
+
+## Requirements
+
+### Requirement: Parse endpoint
+The system SHALL expose `POST /parse` which accepts user-provided text and returns exactly one schema-valid event object.
+
+#### Scenario: Successful parse
+- **WHEN** the client submits a valid JSON body containing a non-empty `text` string
+- **THEN** the API returns HTTP 200
+- **AND** the response matches the v1 response schema
+- **AND** the response includes `schema_version` and `model_version`
+
+### Requirement: Single primary event
+The system SHALL return exactly one `event_type` per request.
+
+#### Scenario: Multi-event input
+- **WHEN** the input contains multiple candidate events
+- **THEN** the API selects a single primary event using the documented selection rules
+- **AND** all other events are ignored
+
+### Requirement: No-match behavior
+The system SHALL return `event_type = "UNKNOWN"` when the input does not map to any canonical v1 event type.
+
+#### Scenario: No match
+- **WHEN** the input text contains no clear v1 event
+- **THEN** the API returns HTTP 200
+- **AND** the response contains `event_type = "UNKNOWN"`
+
+### Requirement: Input constraints
+The system SHALL enforce a maximum supported `text` size and reject oversized inputs.
+
+#### Scenario: Payload too large
+- **WHEN** `text` exceeds the configured maximum length
+- **THEN** the API returns HTTP 413
+- **AND** the response matches the error schema
+
+### Requirement: Error schema
+The system SHALL return typed error responses with a stable JSON shape.
+
+#### Scenario: Invalid JSON
+- **WHEN** the request body is not valid JSON
+- **THEN** the API returns HTTP 400
+- **AND** the response matches the error schema
+
+#### Scenario: Unsupported content type
+- **WHEN** the request `Content-Type` is not JSON
+- **THEN** the API returns HTTP 415
+- **AND** the response matches the error schema
+
+#### Scenario: Invalid semantics
+- **WHEN** the request JSON is well-formed but `text` is missing or empty
+- **THEN** the API returns HTTP 422
+- **AND** the response matches the error schema

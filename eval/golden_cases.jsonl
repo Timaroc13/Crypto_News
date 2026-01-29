@@ -1,0 +1,1 @@
+{"id":"example-1","text":"BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval.","expected":{"event_type":"ETF_INFLOW","jurisdiction":"US"}}
