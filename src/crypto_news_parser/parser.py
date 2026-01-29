@@ -107,8 +107,33 @@ def _candidates(text: str) -> list[CandidateEvent]:
     if "hack" in t or "exploit" in t or "breach" in t:
         add(EventType.EXCHANGE_HACK, confidence=0.75, impact_score=0.9)
 
-    if "sec" in t or "cftc" in t or "enforcement" in t or "charges" in t or "lawsuit" in t:
-        add(EventType.ENFORCEMENT_ACTION, confidence=0.7, impact_score=0.85)
+    regulators = [
+        "sec",
+        "cftc",
+        "doj",
+        "finra",
+        "fca",
+        "esma",
+        "ofac",
+    ]
+    enforcement_words = [
+        "enforcement",
+        "charges",
+        "charged",
+        "lawsuit",
+        "sues",
+        "sued",
+        "settlement",
+        "fine",
+        "penalty",
+        "indict",
+        "indicted",
+        "arrest",
+        "probe",
+        "investigation",
+    ]
+    if any(w in t for w in enforcement_words) and any(r in t for r in regulators):
+        add(EventType.ENFORCEMENT_ACTION, confidence=0.72, impact_score=0.85)
 
     if "depeg" in t or "lost its peg" in t or "trading below $1" in t:
         add(EventType.STABLECOIN_DEPEG, confidence=0.75, impact_score=0.8)
@@ -128,8 +153,22 @@ def _candidates(text: str) -> list[CandidateEvent]:
     if "etf" in t and ("outflow" in t or "outflows" in t):
         add(EventType.ETF_OUTFLOW, confidence=0.7, impact_score=0.6)
 
-    if "stablecoin" in t and ("mint" in t or "issued" in t or "issuance" in t):
-        add(EventType.STABLECOIN_ISSUANCE, confidence=0.65, impact_score=0.55)
+    if "stablecoin" in t and any(
+        w in t
+        for w in [
+            "mint",
+            "issued",
+            "issuance",
+            "launch",
+            "launched",
+            "launches",
+            "registered",
+            "backed",
+            "pegged",
+            "introduced",
+        ]
+    ):
+        add(EventType.STABLECOIN_ISSUANCE, confidence=0.68, impact_score=0.55)
 
     if "exchange" in t and ("inflow" in t or "inflows" in t):
         add(EventType.CEX_INFLOW, confidence=0.6, impact_score=0.5)

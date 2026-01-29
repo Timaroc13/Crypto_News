@@ -36,6 +36,16 @@ def test_parse_rejects_too_large() -> None:
     assert resp.status_code in {413, 422}
 
 
+def test_stablecoin_launch_maps_to_issuance() -> None:
+    text = (
+        "The UAE has launched its first USD-backed stablecoin registered with the country’s central bank, "
+        "marking a regulated entry into digital dollar issuance."
+    )
+    resp = client.post("/parse", json={"text": text})
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "STABLECOIN_ISSUANCE"
+
+
 def test_parse_invalid_json_returns_400() -> None:
     resp = client.post(
         "/parse",
