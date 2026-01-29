@@ -7,6 +7,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from .llm_adapter import RefinementRequest, get_provider_from_env, stable_seed
 from .models import (
     MAX_TEXT_LENGTH,
     ErrorEnvelope,
@@ -15,6 +16,7 @@ from .models import (
     ParseResponse,
 )
 from .parser import (
+    CandidateEvent,
     extract_assets,
     extract_entities,
     infer_sentiment,
@@ -27,6 +29,65 @@ MODEL_VERSION = os.getenv("MODEL_VERSION", "news-parser-0.1")
 REQUIRED_API_KEY = os.getenv("API_KEY")
 
 app = FastAPI(title="Crypto News Parser", version=SCHEMA_VERSION)
+
+
+def get_llm_provider():
+    # Separated for test monkeypatching.
+    return get_provider_from_env()
+
+
+async def _maybe_refine(
+    req: ParseRequest,
+    primary: CandidateEvent,
+    assets: list[str],
+    entities: list[str],
+) -> tuple[CandidateEvent, list[str], list[str]]:
+    provider = get_llm_provider()
+    if provider is None:
+        return primary, assets, entities
+
+    if req.deterministic and not getattr(provider, "supports_determinism", False):
+        return primary, assets, entities
+
+    # Refine only when the heuristic result is low-confidence.
+    low_confidence = (primary.event_type.value == "UNKNOWN") or (primary.confidence < 0.65)
+    if not low_confidence:
+        return primary, assets, entities
+
+    request = RefinementRequest(
+        text=req.text,
+        heuristic_event_type=primary.event_type,
+        heuristic_confidence=primary.confidence,
+        heuristic_assets=tuple(assets),
+        heuristic_entities=tuple(entities),
+        deterministic=req.deterministic,
+        seed=stable_seed(req.text) if req.deterministic else None,
+    )
+
+    refinement = await provider.refine(request)
+
+    new_primary = primary
+    if refinement.event_type is not None:
+        new_primary = CandidateEvent(
+            event_type=refinement.event_type,
+            confidence=primary.confidence,
+            impact_score=primary.impact_score,
+        )
+
+    def merge(base: list[str], extra: list[str] | None) -> list[str]:
+        if not extra:
+            return base
+        seen: set[str] = set(base)
+        merged = list(base)
+        for item in extra:
+            if item not in seen:
+                merged.append(item)
+                seen.add(item)
+        return merged
+
+    new_assets = merge(assets, refinement.assets)
+    new_entities = merge(entities, refinement.entities)
+    return new_primary, new_assets, new_entities
 
 
 @app.middleware("http")
@@ -142,6 +203,8 @@ async def parse(
     entities = extract_entities(req.text)
     jurisdiction = resolve_jurisdiction(req.text)
     sentiment = infer_sentiment(req.text)
+
+    primary, assets, entities = await _maybe_refine(req, primary, assets, entities)
 
     # Topics are intentionally loose in v1.
     topics = []

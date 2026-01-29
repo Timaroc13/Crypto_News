@@ -1,5 +1,8 @@
 # Capability: Parse API (v1)
 
+## Purpose
+Provide a low-cost, stateless HTTP API that converts crypto-news text into a stable v1 structured event response.
+
 ## Requirements
 
 ### Requirement: Parse endpoint
