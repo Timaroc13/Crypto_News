@@ -4,18 +4,23 @@ import os
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from .models import (
+    MAX_TEXT_LENGTH,
     ErrorEnvelope,
     ErrorObject,
-    MAX_TEXT_LENGTH,
     ParseRequest,
     ParseResponse,
 )
-from .parser import extract_assets, extract_entities, infer_sentiment, resolve_jurisdiction, select_primary_event
-
+from .parser import (
+    extract_assets,
+    extract_entities,
+    infer_sentiment,
+    resolve_jurisdiction,
+    select_primary_event,
+)
 
 SCHEMA_VERSION = "v1"
 MODEL_VERSION = os.getenv("MODEL_VERSION", "news-parser-0.1")
@@ -42,11 +47,21 @@ async def enforce_json_content_type(request: Request, call_next):
     return await call_next(request)
 
 
-def _error_payload(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
-    return ErrorEnvelope(error=ErrorObject(code=code, message=message, details=details or {})).model_dump()
+def _error_payload(
+    code: str,
+    message: str,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    envelope = ErrorEnvelope(error=ErrorObject(code=code, message=message, details=details or {}))
+    return envelope.model_dump()
 
 
-def _error(code: str, message: str, status: int, details: dict[str, Any] | None = None) -> JSONResponse:
+def _error(
+    code: str,
+    message: str,
+    status: int,
+    details: dict[str, Any] | None = None,
+) -> JSONResponse:
     return JSONResponse(status_code=status, content=_error_payload(code, message, details))
 
 
@@ -95,7 +110,10 @@ def _require_api_key(authorization: str | None) -> None:
     if not REQUIRED_API_KEY:
         return
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail=_error_payload("UNAUTHORIZED", "Missing API key."))
+        raise HTTPException(
+            status_code=401,
+            detail=_error_payload("UNAUTHORIZED", "Missing API key."),
+        )
     token = authorization.split(" ", 1)[1].strip()
     if token != REQUIRED_API_KEY:
         raise HTTPException(status_code=403, detail=_error_payload("FORBIDDEN", "Invalid API key."))

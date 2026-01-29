@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from crypto_news_parser.main import app
 from crypto_news_parser.golden import load_golden_cases
-from crypto_news_parser.models import EventType, Jurisdiction, MarketDirection, ParseRequest, Sentiment, TimeHorizon
+from crypto_news_parser.main import app
+from crypto_news_parser.models import (
+    EventType,
+    Jurisdiction,
+    MarketDirection,
+    Sentiment,
+    TimeHorizon,
+)
 
 
 def main() -> None:
@@ -53,21 +58,35 @@ def main() -> None:
         if "v1_jurisdiction" in comparable_expected:
             comparable_expected["jurisdiction"] = comparable_expected.pop("v1_jurisdiction")
         if not strict:
-            if (et := comparable_expected.get("event_type")) is not None and et not in {e.value for e in EventType}:
+            if (et := comparable_expected.get("event_type")) is not None and et not in {
+                e.value for e in EventType
+            }:
                 comparable_expected.pop("event_type", None)
-            if (j := comparable_expected.get("jurisdiction")) is not None and j not in {e.value for e in Jurisdiction}:
+            if (j := comparable_expected.get("jurisdiction")) is not None and j not in {
+                e.value for e in Jurisdiction
+            }:
                 comparable_expected.pop("jurisdiction", None)
-            if (s := comparable_expected.get("sentiment")) is not None and s not in {e.value for e in Sentiment}:
+            if (s := comparable_expected.get("sentiment")) is not None and s not in {
+                e.value for e in Sentiment
+            }:
                 comparable_expected.pop("sentiment", None)
-            if (md := comparable_expected.get("market_direction")) is not None and md not in {e.value for e in MarketDirection}:
+            if (md := comparable_expected.get("market_direction")) is not None and md not in {
+                e.value for e in MarketDirection
+            }:
                 comparable_expected.pop("market_direction", None)
-            if (th := comparable_expected.get("time_horizon")) is not None and th not in {e.value for e in TimeHorizon}:
+            if (th := comparable_expected.get("time_horizon")) is not None and th not in {
+                e.value for e in TimeHorizon
+            }:
                 comparable_expected.pop("time_horizon", None)
 
         if not strict:
             # Non-strict is intended for iterative dataset building.
             # Only enforce "safe" expectations that don't depend on taxonomy maturity.
-            comparable_expected = {k: comparable_expected[k] for k in ("assets", "entities") if k in comparable_expected}
+            comparable_expected = {
+                k: comparable_expected[k]
+                for k in ("assets", "entities")
+                if k in comparable_expected
+            }
 
         ok = True
         for k, v in comparable_expected.items():

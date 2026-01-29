@@ -15,20 +15,30 @@ def map_to_v1_event_type(label: str | None, text: str) -> str:
     if label in {e.value for e in EventType}:
         return label
 
-    l = label.upper()
+    label_upper = label.upper()
     t = text.lower()
 
     # Conservative mappings: only map when clearly equivalent.
-    if "STABLECOIN" in l and any(k in t for k in ["issu", "mint", "launched", "registered", "backed"]):
+    if "STABLECOIN" in label_upper and any(
+        k in t for k in ["issu", "mint", "launched", "registered", "backed"]
+    ):
         return EventType.STABLECOIN_ISSUANCE.value
 
-    if "DEPEG" in l or "DEPEG" in t.upper() or "lost its peg" in t or "trading below $1" in t:
+    if (
+        "DEPEG" in label_upper
+        or "DEPEG" in t.upper()
+        or "lost its peg" in t
+        or "trading below $1" in t
+    ):
         return EventType.STABLECOIN_DEPEG.value
 
-    if any(k in l for k in ["HACK", "EXPLOIT", "BREACH"]):
+    if any(k in label_upper for k in ["HACK", "EXPLOIT", "BREACH"]):
         return EventType.EXCHANGE_HACK.value
 
-    if any(k in l for k in ["ETF_APPROVAL", "ETF_REJECTION", "ETF_FILING", "ETF_INFLOW", "ETF_OUTFLOW"]):
+    if any(
+        k in label_upper
+        for k in ["ETF_APPROVAL", "ETF_REJECTION", "ETF_FILING", "ETF_INFLOW", "ETF_OUTFLOW"]
+    ):
         # If they used a custom but close ETF label, attempt to match.
         for et in [
             EventType.ETF_APPROVAL,
@@ -37,7 +47,7 @@ def map_to_v1_event_type(label: str | None, text: str) -> str:
             EventType.ETF_INFLOW,
             EventType.ETF_OUTFLOW,
         ]:
-            if et.value in l:
+            if et.value in label_upper:
                 return et.value
 
     # Enforcement-ish labels are often ambiguous (guidance vs action); keep UNKNOWN for now.
@@ -88,14 +98,18 @@ def main() -> None:
             continue
 
         if "v1_event_type" not in expected:
-            expected["v1_event_type"] = map_to_v1_event_type(expected.get("event_type"), c.get("text", ""))
+            expected["v1_event_type"] = map_to_v1_event_type(
+                expected.get("event_type"),
+                c.get("text", ""),
+            )
             changed += 1
 
         if "v1_jurisdiction" not in expected and "jurisdiction" in expected:
             expected["v1_jurisdiction"] = map_to_v1_jurisdiction(expected.get("jurisdiction"))
             changed += 1
 
-    # Write as pretty JSON text sequence (multiple objects back-to-back), to match the current file style.
+    # Write as pretty JSON text sequence (multiple objects back-to-back),
+    # to match the current file style.
     out = "\n".join(json.dumps(c, ensure_ascii=False, indent=2) for c in cases) + "\n"
     path.write_text(out, encoding="utf-8")
 

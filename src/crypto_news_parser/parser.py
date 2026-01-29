@@ -189,7 +189,11 @@ def extract_entities(text: str) -> list[str]:
 
         while i < len(tokens):
             t = tokens[i]
-            if t.lower() in _ENTITY_CONNECTORS and i + 1 < len(tokens) and _is_title_token(tokens[i + 1]):
+            if (
+                t.lower() in _ENTITY_CONNECTORS
+                and i + 1 < len(tokens)
+                and _is_title_token(tokens[i + 1])
+            ):
                 phrase_tokens.append(t)
                 i += 1
                 continue
@@ -304,7 +308,13 @@ def _candidates(text: str) -> list[CandidateEvent]:
     candidates: list[CandidateEvent] = []
 
     def add(event_type: EventType, confidence: float, impact_score: float) -> None:
-        candidates.append(CandidateEvent(event_type=event_type, confidence=confidence, impact_score=impact_score))
+        candidates.append(
+            CandidateEvent(
+                event_type=event_type,
+                confidence=confidence,
+                impact_score=impact_score,
+            )
+        )
 
     if "hack" in t or "exploit" in t or "breach" in t:
         add(EventType.EXCHANGE_HACK, confidence=0.75, impact_score=0.9)

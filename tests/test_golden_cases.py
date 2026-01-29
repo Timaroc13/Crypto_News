@@ -3,9 +3,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from crypto_news_parser.main import app
 from crypto_news_parser.golden import load_golden_cases
-from crypto_news_parser.models import EventType, Jurisdiction, MarketDirection, Sentiment, TimeHorizon
+from crypto_news_parser.main import app
 
 
 def test_golden_cases_match_expected_minimums() -> None:
@@ -58,4 +57,6 @@ def test_golden_cases_match_expected_minimums() -> None:
             strict_expected["jurisdiction"] = strict_expected.pop("v1_jurisdiction")
 
         for key, value in strict_expected.items():
-            assert data.get(key) == value, f"{case['id']} mismatch for {key}: expected {value}, got {data.get(key)}"
+            assert data.get(key) == value, (
+                f"{case['id']} mismatch for {key}: expected {value}, got {data.get(key)}"
+            )

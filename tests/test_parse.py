@@ -2,12 +2,14 @@ from fastapi.testclient import TestClient
 
 from crypto_news_parser.main import app
 
-
 client = TestClient(app)
 
 
 def test_parse_returns_schema_fields() -> None:
-    resp = client.post("/parse", json={"text": "BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval."})
+    resp = client.post(
+        "/parse",
+        json={"text": "BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval."},
+    )
     assert resp.status_code == 200
     data = resp.json()
 
@@ -38,7 +40,8 @@ def test_parse_rejects_too_large() -> None:
 
 def test_stablecoin_launch_maps_to_issuance() -> None:
     text = (
-        "The UAE has launched its first USD-backed stablecoin registered with the country’s central bank, "
+        "The UAE has launched its first USD-backed stablecoin registered "
+        "with the country’s central bank, "
         "marking a regulated entry into digital dollar issuance."
     )
     resp = client.post("/parse", json={"text": text})
@@ -50,7 +53,10 @@ def test_jurisdiction_uae_maps_to_asia() -> None:
     resp = client.post(
         "/parse",
         json={
-            "text": "The UAE has launched its first USD-backed stablecoin registered with the country's central bank.",
+            "text": (
+                "The UAE has launched its first USD-backed stablecoin registered "
+                "with the country's central bank."
+            ),
         },
     )
     assert resp.status_code == 200
@@ -72,7 +78,9 @@ def test_jurisdiction_russia_maps_to_europe() -> None:
     resp = client.post(
         "/parse",
         json={
-            "text": "Russia introduced new limits on crypto purchases for certain categories of buyers.",
+            "text": (
+                "Russia introduced new limits on crypto purchases for certain categories of buyers."
+            ),
         },
     )
     assert resp.status_code == 200
@@ -83,7 +91,10 @@ def test_entities_extract_osl_group() -> None:
     resp = client.post(
         "/parse",
         json={
-            "text": "OSL Group raised $200 million to expand its stablecoin-based payments infrastructure.",
+            "text": (
+                "OSL Group raised $200 million to expand its stablecoin-based payments "
+                "infrastructure."
+            ),
         },
     )
     assert resp.status_code == 200
@@ -94,7 +105,10 @@ def test_entities_extract_person_name() -> None:
     resp = client.post(
         "/parse",
         json={
-            "text": "Michael Saylor’s firm Strategy purchased an additional $2.13 billion worth of bitcoin.",
+            "text": (
+                "Michael Saylor’s firm Strategy purchased an additional $2.13 billion "
+                "worth of bitcoin."
+            ),
         },
     )
     assert resp.status_code == 200
@@ -105,7 +119,9 @@ def test_entities_extract_single_word_entity_allowlist() -> None:
     resp = client.post(
         "/parse",
         json={
-            "text": "Crypto exchange Bybit plans to roll out IBAN accounts and neobank-style features.",
+            "text": (
+                "Crypto exchange Bybit plans to roll out IBAN accounts and neobank-style features."
+            ),
         },
     )
     assert resp.status_code == 200

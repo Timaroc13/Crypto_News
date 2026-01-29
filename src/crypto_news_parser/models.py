@@ -5,7 +5,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-
 MAX_TEXT_LENGTH = 20_000
 
 
@@ -81,21 +80,20 @@ class ParseRequest(BaseModel):
             raise ValueError("text must be non-empty")
         return value
 
-
-@field_validator("source_url")
-@classmethod
-def validate_source_url(cls, value: str | None) -> str | None:
-    if value is None:
-        return None
-    value = value.strip()
-    if not value:
-        return None
-    # Keep validation lightweight; we only accept http(s) to avoid ambiguity.
-    if not (value.startswith("http://") or value.startswith("https://")):
-        raise ValueError("source_url must start with http:// or https://")
-    if len(value) > 2048:
-        raise ValueError("source_url is too long")
-    return value
+    @field_validator("source_url")
+    @classmethod
+    def validate_source_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        # Keep validation lightweight; we only accept http(s) to avoid ambiguity.
+        if not (value.startswith("http://") or value.startswith("https://")):
+            raise ValueError("source_url must start with http:// or https://")
+        if len(value) > 2048:
+            raise ValueError("source_url is too long")
+        return value
 
 
 class ParseResponse(BaseModel):
@@ -118,7 +116,7 @@ class ParseResponse(BaseModel):
 
 
 class ErrorEnvelope(BaseModel):
-    error: "ErrorObject"
+    error: ErrorObject
 
 
 class ErrorObject(BaseModel):
