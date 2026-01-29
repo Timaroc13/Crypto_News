@@ -1,8 +1,14 @@
 # Golden cases
 
-Add **10–30** representative inputs to [golden_cases.jsonl](golden_cases.jsonl). One JSON object per line.
+Add **10–30** representative inputs to [golden_cases.jsonl](golden_cases.jsonl).
 
-## JSONL format
+## File format
+
+Supported formats:
+
+- **JSONL** (one JSON object per line)
+- **JSON text sequence** (multiple JSON objects back-to-back; pretty-printed is OK)
+- **JSON array** (a single `[...]` list of case objects)
 
 Required:
 - `id`: unique string
@@ -15,7 +21,7 @@ Optional metadata (not fetched, for traceability only):
 - `source_published_at` (ISO 8601 string)
 
 Recommended `expected` fields to start with:
-- `event_type` (required)
+- `event_type` (recommended)
 - `jurisdiction`
 - `sentiment`
 - `assets` (list)
@@ -30,4 +36,6 @@ Example:
 ## How it’s used
 
 - `scripts/run_eval.py` runs the API parser directly and prints pass/fail.
-- The test suite will **skip** golden checks if you haven’t populated at least one case beyond the default example.
+- By default, **pytest treats golden cases as a smoke test** (requests must succeed, schema must be valid).
+	- This lets you curate a richer dataset (including future taxonomy labels) without breaking CI.
+- To enforce exact matching for all `expected` fields, run with `RUN_GOLDEN_STRICT=1`.

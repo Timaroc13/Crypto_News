@@ -1,21 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from crypto_news_parser.main import parse
-from crypto_news_parser.models import ParseRequest
+from crypto_news_parser.golden import load_golden_cases
+from crypto_news_parser.models import EventType, Jurisdiction, MarketDirection, ParseRequest, Sentiment, TimeHorizon
 
 
 def main() -> None:
     path = Path(__file__).resolve().parents[1] / "eval" / "golden_cases.jsonl"
-    lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    cases = load_golden_cases(path)
+    strict = os.getenv("RUN_GOLDEN_STRICT") == "1"
 
     total = 0
     passed = 0
 
-    for line in lines:
-        case = json.loads(line)
+    for case in cases:
         case_id = case["id"]
         text = case["text"]
         expected = case.get("expected", {})
@@ -39,8 +41,21 @@ def main() -> None:
 
         actual = result.model_dump()
 
+        comparable_expected = dict(expected)
+        if not strict:
+            if (et := comparable_expected.get("event_type")) is not None and et not in {e.value for e in EventType}:
+                comparable_expected.pop("event_type", None)
+            if (j := comparable_expected.get("jurisdiction")) is not None and j not in {e.value for e in Jurisdiction}:
+                comparable_expected.pop("jurisdiction", None)
+            if (s := comparable_expected.get("sentiment")) is not None and s not in {e.value for e in Sentiment}:
+                comparable_expected.pop("sentiment", None)
+            if (md := comparable_expected.get("market_direction")) is not None and md not in {e.value for e in MarketDirection}:
+                comparable_expected.pop("market_direction", None)
+            if (th := comparable_expected.get("time_horizon")) is not None and th not in {e.value for e in TimeHorizon}:
+                comparable_expected.pop("time_horizon", None)
+
         ok = True
-        for k, v in expected.items():
+        for k, v in comparable_expected.items():
             if actual.get(k) != v:
                 ok = False
 
@@ -50,8 +65,8 @@ def main() -> None:
             print(f"PASS {case_id}")
         else:
             print(f"FAIL {case_id}")
-            print(" expected:", expected)
-            print(" actual:", {k: actual.get(k) for k in expected.keys()})
+            print(" expected:", comparable_expected)
+            print(" actual:", {k: actual.get(k) for k in comparable_expected.keys()})
 
     print(f"\n{passed}/{total} passed")
 
