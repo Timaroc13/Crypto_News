@@ -9,6 +9,11 @@ Required:
 - `text`: input string
 - `expected`: object (you can start minimal and expand later)
 
+Optional metadata (not fetched, for traceability only):
+- `source_url`
+- `source_name`
+- `source_published_at` (ISO 8601 string)
+
 Recommended `expected` fields to start with:
 - `event_type` (required)
 - `jurisdiction`
@@ -19,7 +24,7 @@ Recommended `expected` fields to start with:
 Example:
 
 ```json
-{"id":"sec-etf-inflow","text":"...","expected":{"event_type":"ETF_INFLOW","jurisdiction":"US","assets":["BTC"],"sentiment":"positive"}}
+{"id":"sec-etf-inflow","source_url":"https://example.com/article","source_name":"Example","source_published_at":"2026-01-29T12:34:56Z","text":"...","expected":{"event_type":"ETF_INFLOW","jurisdiction":"US","assets":["BTC"],"sentiment":"positive"}}
 ```
 
 ## How it’s used

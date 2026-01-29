@@ -138,7 +138,8 @@ Multi-event extraction is explicitly out of scope for v1.
 #### **Request**
 
 `{`  
-  `"text": "BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval."`  
+  `"text": "BlackRock’s Bitcoin ETF saw $400M in inflows after SEC approval.",`  
+  `"source_url": "https://example.com/article"`  
 `}`
 
 #### **Response**

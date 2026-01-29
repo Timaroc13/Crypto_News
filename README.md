@@ -22,7 +22,7 @@ pytest
 ## API
 
 - `POST /parse`
-  - Body: `{ "text": "...", "deterministic": false }`
+  - Body: `{ "text": "...", "deterministic": false, "source_url": "https://..." }` (source URL is accepted as metadata only; it is not fetched)
   - Returns a schema-valid response; returns `event_type="UNKNOWN"` when no v1 event matches.
 
 ## Environment

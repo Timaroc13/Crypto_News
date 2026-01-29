@@ -63,6 +63,14 @@ class ParseRequest(BaseModel):
     text: str = Field(..., description="Crypto-related text to parse")
     deterministic: bool = Field(False, description="If true, output is reproducible")
 
+    # Optional metadata (v1): accepted for traceability; MUST NOT trigger any fetching.
+    source_url: str | None = Field(None, description="Optional source URL (not fetched)")
+    source_name: str | None = Field(None, description="Optional source name/publisher")
+    source_published_at: str | None = Field(
+        None,
+        description="Optional published timestamp as ISO 8601 string (not interpreted in v1)",
+    )
+
     @field_validator("text")
     @classmethod
     def validate_text(cls, value: str) -> str:
@@ -72,6 +80,22 @@ class ParseRequest(BaseModel):
         if not value:
             raise ValueError("text must be non-empty")
         return value
+
+
+@field_validator("source_url")
+@classmethod
+def validate_source_url(cls, value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    # Keep validation lightweight; we only accept http(s) to avoid ambiguity.
+    if not (value.startswith("http://") or value.startswith("https://")):
+        raise ValueError("source_url must start with http:// or https://")
+    if len(value) > 2048:
+        raise ValueError("source_url is too long")
+    return value
 
 
 class ParseResponse(BaseModel):

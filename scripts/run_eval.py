@@ -21,7 +21,16 @@ def main() -> None:
         expected = case.get("expected", {})
 
         # Call the endpoint function directly (no HTTP) for cheap local eval.
-        result = parse.__wrapped__(ParseRequest(text=text, deterministic=True), authorization=None)  # type: ignore[attr-defined]
+        result = parse.__wrapped__(
+            ParseRequest(
+                text=text,
+                deterministic=True,
+                source_url=case.get("source_url"),
+                source_name=case.get("source_name"),
+                source_published_at=case.get("source_published_at"),
+            ),
+            authorization=None,
+        )  # type: ignore[attr-defined]
         # If it's async (FastAPI), __wrapped__ returns coroutine in some contexts.
         if hasattr(result, "__await__"):
             import asyncio
