@@ -42,6 +42,12 @@ def main() -> None:
         actual = result.model_dump()
 
         comparable_expected = dict(expected)
+
+        # Prefer v1_* mappings when present (lets dataset keep richer labels).
+        if "v1_event_type" in comparable_expected:
+            comparable_expected["event_type"] = comparable_expected.pop("v1_event_type")
+        if "v1_jurisdiction" in comparable_expected:
+            comparable_expected["jurisdiction"] = comparable_expected.pop("v1_jurisdiction")
         if not strict:
             if (et := comparable_expected.get("event_type")) is not None and et not in {e.value for e in EventType}:
                 comparable_expected.pop("event_type", None)

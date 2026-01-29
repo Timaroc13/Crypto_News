@@ -27,6 +27,10 @@ Recommended `expected` fields to start with:
 - `assets` (list)
 - `entities` (list)
 
+Optional v1 mapping fields (recommended when your primary labels are nonstandard):
+- `v1_event_type` (must match the v1 enum)
+- `v1_jurisdiction` (must match the v1 enum)
+
 Example:
 
 ```json

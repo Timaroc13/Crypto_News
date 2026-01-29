@@ -50,5 +50,12 @@ def test_golden_cases_match_expected_minimums() -> None:
             continue
 
         # Strict mode: enforce exact expected matches.
-        for key, value in expected.items():
+        # Prefer v1_* mappings when present, since API outputs v1 enums.
+        strict_expected = dict(expected)
+        if "v1_event_type" in strict_expected:
+            strict_expected["event_type"] = strict_expected.pop("v1_event_type")
+        if "v1_jurisdiction" in strict_expected:
+            strict_expected["jurisdiction"] = strict_expected.pop("v1_jurisdiction")
+
+        for key, value in strict_expected.items():
             assert data.get(key) == value, f"{case['id']} mismatch for {key}: expected {value}, got {data.get(key)}"
