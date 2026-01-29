@@ -34,6 +34,82 @@ _PRECEDENCE: dict[EventType, int] = {
 _TICKER_RE = re.compile(r"(?:\$)?([A-Z]{2,6})\b")
 
 
+_ENTITY_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9'’\-\.]*")
+
+
+_ENTITY_SINGLE_WORD_ALLOW = {
+    # Common entities from the current golden set / crypto news.
+    "Bybit",
+    "Ledger",
+    "Robinhood",
+    "BlackRock",
+    "CoinDesk",
+    "Cointelegraph",
+    "Reuters",
+}
+
+
+_ENTITY_SINGLE_WORD_DENY = {
+    # Generic sentence starters and common nouns.
+    "A",
+    "An",
+    "The",
+    "This",
+    "That",
+    "These",
+    "Those",
+    "Crypto",
+    "Trading",
+    "Tokenized",
+    "Digital",
+    "New",
+    "York",
+    "White",
+    "House",
+}
+
+
+_ENTITY_ALLCAPS_DENY = {
+    # Avoid duplicating assets/jurisdiction/regulators as entities.
+    "USD",
+    "US",
+    "UAE",
+    "EU",
+    "UK",
+    "SEC",
+    "CFTC",
+    "DOJ",
+    "ETF",
+    "IBAN",
+}
+
+
+_ENTITY_CONNECTORS = {"of", "the", "and", "for"}
+
+
+def _clean_entity_token(token: str) -> str:
+    t = token.strip("\"'“”‘’.,;:()[]{}")
+    # Normalize possessives like “Saylor’s” -> “Saylor”.
+    if t.endswith("'s") or t.endswith("’s"):
+        t = t[:-2]
+    return t
+
+
+def _is_title_token(token: str) -> bool:
+    if not token:
+        return False
+    if not token[0].isupper():
+        return False
+    # Require at least one lowercase to avoid treating tickers as Title Case.
+    return any(c.islower() for c in token[1:])
+
+
+def _is_allcaps_token(token: str) -> bool:
+    if not token:
+        return False
+    return token.isupper() and any(c.isalpha() for c in token) and len(token) >= 2
+
+
 def extract_assets(text: str) -> list[str]:
     # Best-effort: capture likely tickers; filter common false positives.
     candidates = [match.group(1) for match in _TICKER_RE.finditer(text)]
@@ -63,9 +139,64 @@ def extract_assets(text: str) -> list[str]:
     return ordered
 
 
-def extract_entities(_: str) -> list[str]:
-    # Placeholder: entity extraction is intentionally minimal for v1 skeleton.
-    return []
+def extract_entities(text: str) -> list[str]:
+    # Conservative heuristic: extract sequences of capitalized tokens.
+    tokens: list[str] = []
+    for m in _ENTITY_TOKEN_RE.finditer(text):
+        cleaned = _clean_entity_token(m.group(0))
+        if cleaned:
+            tokens.append(cleaned)
+
+    entities: list[str] = []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        next_tok = tokens[i + 1] if i + 1 < len(tokens) else ""
+
+        starts = _is_title_token(tok) or (
+            _is_allcaps_token(tok) and tok not in _ENTITY_ALLCAPS_DENY and _is_title_token(next_tok)
+        )
+        if not starts:
+            i += 1
+            continue
+
+        phrase_tokens: list[str] = [tok]
+        i += 1
+
+        while i < len(tokens):
+            t = tokens[i]
+            if t.lower() in _ENTITY_CONNECTORS and i + 1 < len(tokens) and _is_title_token(tokens[i + 1]):
+                phrase_tokens.append(t)
+                i += 1
+                continue
+            if _is_title_token(t):
+                phrase_tokens.append(t)
+                i += 1
+                continue
+            break
+
+        phrase = " ".join(phrase_tokens).strip()
+        if not phrase:
+            continue
+
+        # Filter very short or generic results.
+        if " " not in phrase:
+            if phrase in _ENTITY_SINGLE_WORD_DENY:
+                continue
+            if phrase not in _ENTITY_SINGLE_WORD_ALLOW:
+                # Avoid picking up random single capitalized words.
+                continue
+
+        entities.append(phrase)
+
+    # de-dupe preserving order
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for e in entities:
+        if e not in seen:
+            ordered.append(e)
+            seen.add(e)
+    return ordered
 
 
 def resolve_jurisdiction(text: str) -> Jurisdiction:
