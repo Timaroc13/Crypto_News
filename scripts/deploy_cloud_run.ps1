@@ -16,7 +16,9 @@ param(
   [string]$ModelVersion = "news-parser-0.1"
 )
 
-$ErrorActionPreference = "Stop"
+# PowerShell can turn native stderr output into errors (NativeCommandError).
+# We rely on gcloud exit codes and explicitly throw when needed.
+$ErrorActionPreference = "Continue"
 
 $GcloudExe = "gcloud.cmd"
 try {
