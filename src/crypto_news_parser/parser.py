@@ -70,21 +70,68 @@ def extract_entities(_: str) -> list[str]:
 
 def resolve_jurisdiction(text: str) -> Jurisdiction:
     t = text.lower()
+
+    def has_any(*patterns: str) -> bool:
+        return any(re.search(p, t) for p in patterns)
+
     # Only explicit cues; otherwise GLOBAL.
-    if any(k in t for k in [" sec ", " u.s.", " us ", " united states", " cftc", " nyse", " nasdaq"]):
+    if has_any(
+        r"\bunited states\b",
+        r"\bu\.?s\.?\b",
+        r"\bsec\b",
+        r"\bcftc\b",
+        r"\bdoj\b",
+        r"\bnyse\b",
+        r"\bnasdaq\b",
+    ):
         return Jurisdiction.US
-    if any(k in t for k in [" eu ", " european union", " esma", " mica", " ecb"]):
+
+    if has_any(
+        r"\beuropean union\b",
+        r"\beu\b",
+        r"\besma\b",
+        r"\bmica\b",
+        r"\becb\b",
+        r"\bunited kingdom\b",
+        r"\buk\b",
+        r"\bfca\b",
+        r"\brussia\b",
+        r"\brussian\b",
+        r"\bmoscow\b",
+    ):
         return Jurisdiction.EUROPE
-    if any(k in t for k in [" uk ", " united kingdom", " fca "]):
-        return Jurisdiction.EUROPE
-    if any(k in t for k in [" canada", " osc ", " csa ", " mexico", " brazil", " argentina", " chile"]):
+
+    if has_any(
+        r"\bcanada\b",
+        r"\bmexico\b",
+        r"\bbrazil\b",
+        r"\bargentina\b",
+        r"\bchile\b",
+        r"\bosc\b",
+        r"\bcsa\b",
+    ):
         return Jurisdiction.AMERICAS_NON_US
-    if any(k in t for k in [" japan", " singapore", " hong kong", " korea", " india", " china"]):
+
+    if has_any(
+        r"\bjapan\b",
+        r"\bsingapore\b",
+        r"\bhong\s+kong\b",
+        r"\b(korea|south korea|north korea)\b",
+        r"\bindia\b",
+        r"\bchina\b",
+        r"\buae\b",
+        r"\bunited arab emirates\b",
+        r"\bdubai\b",
+        r"\babu dhabi\b",
+    ):
         return Jurisdiction.ASIA
-    if any(k in t for k in [" australia", " new zealand"]):
+
+    if has_any(r"\baustralia\b", r"\bnew zealand\b"):
         return Jurisdiction.OCEANIA
-    if any(k in t for k in [" nigeria", " kenya", " south africa"]):
+
+    if has_any(r"\bnigeria\b", r"\bkenya\b", r"\bsouth africa\b"):
         return Jurisdiction.AFRICA
+
     return Jurisdiction.GLOBAL
 
 

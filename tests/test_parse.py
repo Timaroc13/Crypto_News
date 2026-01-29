@@ -46,6 +46,39 @@ def test_stablecoin_launch_maps_to_issuance() -> None:
     assert resp.json()["event_type"] == "STABLECOIN_ISSUANCE"
 
 
+def test_jurisdiction_uae_maps_to_asia() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "The UAE has launched its first USD-backed stablecoin registered with the country's central bank.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["jurisdiction"] == "ASIA"
+
+
+def test_jurisdiction_hong_kong_maps_to_asia() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "Hong Kong regulators proposed new rules for licensed crypto exchanges.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["jurisdiction"] == "ASIA"
+
+
+def test_jurisdiction_russia_maps_to_europe() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "Russia introduced new limits on crypto purchases for certain categories of buyers.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["jurisdiction"] == "EUROPE"
+
+
 def test_parse_invalid_json_returns_400() -> None:
     resp = client.post(
         "/parse",

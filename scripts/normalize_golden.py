@@ -63,6 +63,9 @@ def map_to_v1_jurisdiction(label: str | None) -> str:
     if u in {"HONG_KONG", "SINGAPORE", "JAPAN", "CHINA", "KOREA", "INDIA"}:
         return Jurisdiction.ASIA.value
 
+    if u in {"RUSSIA"}:
+        return Jurisdiction.EUROPE.value
+
     if u in {"UK", "UNITED_KINGDOM", "EU", "GERMANY", "FRANCE", "ITALY", "SPAIN"}:
         return Jurisdiction.EUROPE.value
 
