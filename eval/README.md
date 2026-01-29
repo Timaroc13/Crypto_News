@@ -40,6 +40,9 @@ Example:
 ## How it’s used
 
 - `scripts/run_eval.py` runs the API parser directly and prints pass/fail.
-- By default, **pytest treats golden cases as a smoke test** (requests must succeed, schema must be valid).
+
+- By default:
+	- **pytest treats golden cases as a smoke test** (requests must succeed, schema must be valid)
+	- `scripts/run_eval.py` is also **smoke-first** and only enforces `expected.assets` / `expected.entities` when provided
 	- This lets you curate a richer dataset (including future taxonomy labels) without breaking CI.
 - To enforce exact matching for all `expected` fields, run with `RUN_GOLDEN_STRICT=1`.

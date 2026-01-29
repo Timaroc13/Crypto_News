@@ -20,6 +20,9 @@
   "expected": {
     "event_type": "FUND_RAISE",
     "jurisdiction": "GLOBAL",
+    "assets": [
+      "BTC"
+    ],
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
   }
@@ -33,6 +36,9 @@
   "expected": {
     "event_type": "NETWORK_VALIDATOR_DECLINE",
     "jurisdiction": "GLOBAL",
+    "assets": [
+      "SOL"
+    ],
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
   }
@@ -85,6 +91,9 @@
   "expected": {
     "event_type": "CORPORATE_BITCOIN_PURCHASE",
     "jurisdiction": "US",
+    "assets": [
+      "BTC"
+    ],
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
   }
@@ -98,6 +107,9 @@
   "expected": {
     "event_type": "CRYPTO_MARKET_VOLATILITY",
     "jurisdiction": "GLOBAL",
+    "assets": [
+      "BTC"
+    ],
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
   }

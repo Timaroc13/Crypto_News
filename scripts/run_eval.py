@@ -4,7 +4,9 @@ import json
 import os
 from pathlib import Path
 
-from crypto_news_parser.main import parse
+from fastapi.testclient import TestClient
+
+from crypto_news_parser.main import app
 from crypto_news_parser.golden import load_golden_cases
 from crypto_news_parser.models import EventType, Jurisdiction, MarketDirection, ParseRequest, Sentiment, TimeHorizon
 
@@ -14,6 +16,8 @@ def main() -> None:
     cases = load_golden_cases(path)
     strict = os.getenv("RUN_GOLDEN_STRICT") == "1"
 
+    client = TestClient(app)
+
     total = 0
     passed = 0
 
@@ -22,24 +26,24 @@ def main() -> None:
         text = case["text"]
         expected = case.get("expected", {})
 
-        # Call the endpoint function directly (no HTTP) for cheap local eval.
-        result = parse.__wrapped__(
-            ParseRequest(
-                text=text,
-                deterministic=True,
-                source_url=case.get("source_url"),
-                source_name=case.get("source_name"),
-                source_published_at=case.get("source_published_at"),
-            ),
-            authorization=None,
-        )  # type: ignore[attr-defined]
-        # If it's async (FastAPI), __wrapped__ returns coroutine in some contexts.
-        if hasattr(result, "__await__"):
-            import asyncio
+        resp = client.post(
+            "/parse",
+            json={
+                "text": text,
+                "deterministic": True,
+                "source_url": case.get("source_url"),
+                "source_name": case.get("source_name"),
+                "source_published_at": case.get("source_published_at"),
+            },
+        )
+        if resp.status_code != 200:
+            print(f"FAIL {case_id}")
+            print(" status:", resp.status_code)
+            print(" body:", resp.text)
+            total += 1
+            continue
 
-            result = asyncio.get_event_loop().run_until_complete(result)  # type: ignore[assignment]
-
-        actual = result.model_dump()
+        actual = resp.json()
 
         comparable_expected = dict(expected)
 
@@ -60,10 +64,25 @@ def main() -> None:
             if (th := comparable_expected.get("time_horizon")) is not None and th not in {e.value for e in TimeHorizon}:
                 comparable_expected.pop("time_horizon", None)
 
+        if not strict:
+            # Non-strict is intended for iterative dataset building.
+            # Only enforce "safe" expectations that don't depend on taxonomy maturity.
+            comparable_expected = {k: comparable_expected[k] for k in ("assets", "entities") if k in comparable_expected}
+
         ok = True
         for k, v in comparable_expected.items():
-            if actual.get(k) != v:
-                ok = False
+            if k in {"assets", "entities"} and isinstance(v, list):
+                actual_list = actual.get(k) or []
+                if not isinstance(actual_list, list):
+                    ok = False
+                    continue
+                # Treat expected lists as a subset requirement (actual can be richer).
+                if not set(v).issubset(set(actual_list)):
+                    ok = False
+                    continue
+            else:
+                if actual.get(k) != v:
+                    ok = False
 
         total += 1
         if ok:

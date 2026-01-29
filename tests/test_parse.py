@@ -112,6 +112,41 @@ def test_entities_extract_single_word_entity_allowlist() -> None:
     assert "Bybit" in resp.json()["entities"]
 
 
+def test_assets_extract_bitcoin_to_btc() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "Bitcoin briefly fell below $90,000 amid a broader global market sell-off.",
+        },
+    )
+    assert resp.status_code == 200
+    assert "BTC" in resp.json()["assets"]
+
+
+def test_assets_extract_solana_possessive_to_sol() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "Solana’s validator count has fallen roughly 68% from its 2023 peak.",
+        },
+    )
+    assert resp.status_code == 200
+    assert "SOL" in resp.json()["assets"]
+
+
+def test_assets_do_not_include_unrelated_uppercase_tokens() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "OSL Group raised $200 million and the CEO outlined the plan.",
+        },
+    )
+    assert resp.status_code == 200
+    assets = resp.json()["assets"]
+    assert "OSL" not in assets
+    assert "CEO" not in assets
+
+
 def test_parse_invalid_json_returns_400() -> None:
     resp = client.post(
         "/parse",

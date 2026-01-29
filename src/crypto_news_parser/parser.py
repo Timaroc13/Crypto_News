@@ -34,6 +34,35 @@ _PRECEDENCE: dict[EventType, int] = {
 _TICKER_RE = re.compile(r"(?:\$)?([A-Z]{2,6})\b")
 
 
+_ASSET_ALLOWLIST = {
+    "BTC",
+    "ETH",
+    "SOL",
+    "XRP",
+    "BNB",
+    "ADA",
+    "DOGE",
+    "LTC",
+    "AVAX",
+    "DOT",
+    "LINK",
+    "UNI",
+    "AAVE",
+    "USDT",
+    "USDC",
+}
+
+
+_ASSET_NAME_PATTERNS: list[tuple[str, str]] = [
+    (r"\bbitcoin(?:'s|’s)?\b", "BTC"),
+    (r"\bethereum(?:'s|’s)?\b", "ETH"),
+    (r"\bether(?:'s|’s)?\b", "ETH"),
+    (r"\bsolana(?:'s|’s)?\b", "SOL"),
+    (r"\btether(?:'s|’s)?\b", "USDT"),
+    (r"\busdc\b", "USDC"),
+]
+
+
 _ENTITY_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9'’\-\.]*")
 
 
@@ -111,23 +140,18 @@ def _is_allcaps_token(token: str) -> bool:
 
 
 def extract_assets(text: str) -> list[str]:
-    # Best-effort: capture likely tickers; filter common false positives.
-    candidates = [match.group(1) for match in _TICKER_RE.finditer(text)]
-    stop = {
-        "USD",
-        "US",
-        "SEC",
-        "ETF",
-        "CEO",
-        "CFTC",
-        "EU",
-        "UK",
-    }
+    # Best-effort: favor precision over recall.
+    # 1) Map common asset names to tickers.
+    t = text.lower()
     assets: list[str] = []
-    for token in candidates:
-        if token in stop:
-            continue
-        if token.isalpha() and token == token.upper():
+    for pattern, ticker in _ASSET_NAME_PATTERNS:
+        if re.search(pattern, t):
+            assets.append(ticker)
+
+    # 2) Capture explicit tickers (e.g., BTC, $BTC) but only from an allowlist.
+    for match in _TICKER_RE.finditer(text):
+        token = match.group(1)
+        if token in _ASSET_ALLOWLIST:
             assets.append(token)
     # de-dupe preserving order
     seen: set[str] = set()
