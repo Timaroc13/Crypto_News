@@ -34,7 +34,10 @@ pytest
 
 Prereqs:
 
-- `gcloud` installed
+- Google Cloud CLI (`gcloud`) installed: https://cloud.google.com/sdk/docs/install
+- Authenticate + initialize once:
+  - `gcloud init`
+  - `gcloud auth login`
 - A GCP project selected: `gcloud config set project <PROJECT_ID>`
 - Artifact Registry enabled (recommended)
 
