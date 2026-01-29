@@ -18,16 +18,37 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$GcloudExe = "gcloud.cmd"
+try {
+  $resolved = (Get-Command $GcloudExe -ErrorAction Stop).Source
+  if ($resolved) {
+    $GcloudExe = $resolved
+  }
+} catch {
+  # Fall back to whatever is on PATH.
+  $GcloudExe = "gcloud"
+}
+
 function Invoke-Gcloud {
   param(
     [Parameter(Mandatory = $true)]
     [string[]]$Args
   )
 
-  & gcloud @Args
+  & $GcloudExe @Args
   if ($LASTEXITCODE -ne 0) {
     throw "gcloud failed (exit $LASTEXITCODE): gcloud $($Args -join ' ')"
   }
+}
+
+function Test-Gcloud {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$Args
+  )
+
+  & $GcloudExe @Args 2>$null | Out-Null
+  return ($LASTEXITCODE -eq 0)
 }
 
 Write-Host "Setting project..." -ForegroundColor Cyan
@@ -45,8 +66,7 @@ Invoke-Gcloud @(
 # Ensure Artifact Registry repo exists
 $repoFull = "$Region-docker.pkg.dev/$ProjectId/$Repo"
 Write-Host "Ensuring Artifact Registry repo exists: $Repo ($Region)" -ForegroundColor Cyan
-& gcloud artifacts repositories describe $Repo --location $Region 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) {
+if (-not (Test-Gcloud @("artifacts", "repositories", "describe", $Repo, "--location", $Region))) {
   Invoke-Gcloud @(
     "artifacts",
     "repositories",
