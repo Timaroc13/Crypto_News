@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.git/
+.github/
+*.md
+
+# Eval data isn't needed to run the service
+/eval/
+/tests/
+/scripts/

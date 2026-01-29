@@ -38,23 +38,27 @@ Prereqs:
 - A GCP project selected: `gcloud config set project <PROJECT_ID>`
 - Artifact Registry enabled (recommended)
 
+Recommended env vars:
+
+- `MODEL_VERSION` (set to a release tag / commit SHA for traceability)
+- `API_KEY` (optional; if set, requires `Authorization: Bearer <API_KEY>`)
+
 Build and deploy from this repo root:
 
 ```powershell
 # Authenticate once
 gcloud auth login
 
-# Build and push (Cloud Build)
-gcloud builds submit --tag gcr.io/<PROJECT_ID>/crypto-news-parser
-
-# Deploy to Cloud Run (scale-to-zero by default)
-gcloud run deploy crypto-news-parser `
-  --image gcr.io/<PROJECT_ID>/crypto-news-parser `
-  --region us-central1 `
-  --allow-unauthenticated
+# Recommended: use Artifact Registry
+# One-liner deploy helper:
+./scripts/deploy_cloud_run.ps1 -ProjectId <PROJECT_ID> -Region us-central1 -AllowUnauthenticated
 ```
 
-To require an API key, set `API_KEY` as an environment variable in the Cloud Run service config.
+Notes:
+
+- The container reads `$env:PORT` on Cloud Run (defaults to 8080).
+- For private services, omit `-AllowUnauthenticated`.
+- For API keys, prefer Secret Manager and bind via `--set-secrets`.
 
 ## Golden evals
 
