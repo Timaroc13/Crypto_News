@@ -145,6 +145,34 @@ class ParseRequest(BaseModel):
         return value
 
 
+class ParseUrlRequest(BaseModel):
+    url: str = Field(..., description="Absolute http(s) URL to fetch and parse")
+    deterministic: bool = Field(False, description="If true, output is reproducible given fetched content")
+
+    # Optional metadata (traceability only).
+    source_name: str | None = Field(None, description="Optional source name/publisher")
+    source_published_at: str | None = Field(
+        None,
+        description="Optional published timestamp as ISO 8601 string (not interpreted in v1)",
+    )
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        if value is None:
+            raise ValueError("url is required")
+        value = value.strip()
+        if not value:
+            raise ValueError("url must be non-empty")
+        if any(ch.isspace() for ch in value):
+            raise ValueError("url must not contain whitespace")
+        if not (value.startswith("http://") or value.startswith("https://")):
+            raise ValueError("url must start with http:// or https://")
+        if len(value) > 2048:
+            raise ValueError("url is too long")
+        return value
+
+
 class ParseResponse(BaseModel):
     event_type: EventType
     v1_event_type: EventTypeV1 | None = Field(

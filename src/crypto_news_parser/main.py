@@ -8,6 +8,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .llm_adapter import RefinementRequest, get_provider_from_env, stable_seed
+from .fetch import (
+    FetchBlockedError,
+    FetchError,
+    FetchTimeoutError,
+    FetchTooLargeError,
+    FetchUnsupportedContentTypeError,
+    fetch_url_text,
+)
 from .models import (
     MAX_TEXT_LENGTH,
     ErrorEnvelope,
@@ -15,6 +23,7 @@ from .models import (
     EventType,
     EventTypeV1,
     ParseRequest,
+    ParseUrlRequest,
     ParseResponse,
 )
 from .parser import (
@@ -100,7 +109,7 @@ async def _maybe_refine(
 async def enforce_json_content_type(request: Request, call_next):
     # Enforce JSON input (PRD: 415 for unsupported media type).
     # Do this in middleware so it runs before FastAPI attempts to parse/validate the body.
-    if request.method.upper() == "POST" and request.url.path == "/parse":
+    if request.method.upper() == "POST" and request.url.path in {"/parse", "/parse_url"}:
         content_type = request.headers.get("content-type")
         if content_type is not None:
             ct = content_type.split(";", 1)[0].strip().lower()
@@ -305,3 +314,49 @@ async def parse(
         schema_version=SCHEMA_VERSION,
         model_version=MODEL_VERSION,
     )
+
+
+@app.post("/parse_url", response_model=ParseResponse)
+async def parse_url(
+    req: ParseUrlRequest,
+    authorization: str | None = Header(default=None),
+) -> ParseResponse:
+    _require_api_key(authorization)
+
+    try:
+        fetched = await fetch_url_text(req.url)
+    except FetchBlockedError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=_error_payload("URL_BLOCKED", str(e), details={"url": req.url}),
+        )
+    except FetchTooLargeError as e:
+        raise HTTPException(
+            status_code=413,
+            detail=_error_payload("FETCH_TOO_LARGE", str(e), details={"url": req.url}),
+        )
+    except FetchTimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail=_error_payload("FETCH_TIMEOUT", str(e), details={"url": req.url}),
+        )
+    except FetchUnsupportedContentTypeError as e:
+        raise HTTPException(
+            status_code=415,
+            detail=_error_payload("UNSUPPORTED_FETCH_CONTENT_TYPE", str(e), details={"url": req.url}),
+        )
+    except FetchError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=_error_payload("FETCH_FAILED", str(e), details={"url": req.url}),
+        )
+
+    # Reuse the main parse pipeline using extracted text.
+    parse_req = ParseRequest(
+        text=fetched.text,
+        deterministic=req.deterministic,
+        source_url=fetched.url,
+        source_name=req.source_name,
+        source_published_at=req.source_published_at,
+    )
+    return await parse(parse_req, authorization=authorization)
