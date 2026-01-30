@@ -98,6 +98,12 @@ class Jurisdiction(str, Enum):
     GLOBAL = "GLOBAL"
 
 
+class JurisdictionBasis(str, Enum):
+    explicit = "explicit"
+    implied = "implied"
+    none = "none"
+
+
 class ParseRequest(BaseModel):
     text: str = Field(..., description="Crypto-related text to parse")
     deterministic: bool = Field(False, description="If true, output is reproducible")
@@ -153,6 +159,16 @@ class ParseResponse(BaseModel):
     assets: list[str]
     entities: list[str]
     jurisdiction: Jurisdiction
+    jurisdiction_basis: JurisdictionBasis | None = Field(
+        default=None,
+        description='Optional explanation of how jurisdiction was determined: "explicit" | "implied" | "none".',
+    )
+    jurisdiction_confidence: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Optional confidence score for jurisdiction inference.",
+    )
     sentiment: Sentiment
     impact_score: float = Field(..., ge=0.0, le=1.0)
     confidence: float = Field(..., ge=0.0, le=1.0)

@@ -272,12 +272,35 @@ def extract_entities(text: str) -> list[str]:
 
 
 def resolve_jurisdiction(text: str) -> Jurisdiction:
+    jurisdiction, _, _ = resolve_jurisdiction_with_meta(text)
+    return jurisdiction
+
+
+def resolve_jurisdiction_with_meta(text: str) -> tuple[Jurisdiction, str, float]:
+    """Return (jurisdiction, basis, confidence).
+
+    - basis: "explicit" | "implied" | "none"
+    - confidence: float in [0, 1]
+
+    This keeps the existing Jurisdiction enum stable while exposing whether
+    geo was explicit vs inferred.
+    """
+
     t = text.lower()
 
     def has_any(*patterns: str) -> bool:
         return any(re.search(p, t) for p in patterns)
 
-    # Only explicit cues; otherwise GLOBAL.
+    # Explicit global scope signals.
+    if has_any(
+        r"\bglobal\b",
+        r"\bworldwide\b",
+        r"\binternational\b",
+        r"\bacross\s+(?:the\s+)?world\b",
+    ):
+        return Jurisdiction.GLOBAL, "explicit", 0.85
+
+    # Explicit cues; otherwise GLOBAL.
     if has_any(
         r"\bunited states\b",
         r"\bu\.?s\.?\b",
@@ -288,7 +311,7 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
         r"\bnyse\b",
         r"\bnasdaq\b",
     ):
-        return Jurisdiction.US
+        return Jurisdiction.US, "explicit", 0.9
 
     if has_any(
         r"\beuropean union\b",
@@ -303,12 +326,13 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
         r"\brussia\b",
         r"\brussian\b",
         r"\bmoscow\b",
+        r"\bbrussels\b",
     ):
-        return Jurisdiction.EUROPE
+        return Jurisdiction.EUROPE, "explicit", 0.9
 
-    # Currency cues (heuristic): treat € as EUROPE.
+    # Currency cues (implied): treat € as EUROPE.
     if "€" in text:
-        return Jurisdiction.EUROPE
+        return Jurisdiction.EUROPE, "implied", 0.7
 
     if has_any(
         r"\bcanada\b",
@@ -319,7 +343,7 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
         r"\bosc\b",
         r"\bcsa\b",
     ):
-        return Jurisdiction.AMERICAS_NON_US
+        return Jurisdiction.AMERICAS_NON_US, "explicit", 0.9
 
     if has_any(
         r"\bjapan\b",
@@ -333,15 +357,15 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
         r"\bdubai\b",
         r"\babu dhabi\b",
     ):
-        return Jurisdiction.ASIA
+        return Jurisdiction.ASIA, "explicit", 0.9
 
     if has_any(r"\baustralia\b", r"\bnew zealand\b"):
-        return Jurisdiction.OCEANIA
+        return Jurisdiction.OCEANIA, "explicit", 0.9
 
     if has_any(r"\bnigeria\b", r"\bkenya\b", r"\bsouth africa\b"):
-        return Jurisdiction.AFRICA
+        return Jurisdiction.AFRICA, "explicit", 0.9
 
-    return Jurisdiction.GLOBAL
+    return Jurisdiction.GLOBAL, "none", 0.3
 
 
 def infer_sentiment(text: str) -> Sentiment:

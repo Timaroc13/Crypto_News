@@ -24,6 +24,7 @@ from .parser import (
     infer_event_subtype,
     infer_sentiment,
     resolve_jurisdiction,
+    resolve_jurisdiction_with_meta,
     select_primary_event,
 )
 
@@ -206,7 +207,9 @@ async def parse(
     primary = select_primary_event(req.text)
     assets = extract_assets(req.text)
     entities = extract_entities(req.text)
-    jurisdiction = resolve_jurisdiction(req.text)
+    jurisdiction, jurisdiction_basis, jurisdiction_confidence = resolve_jurisdiction_with_meta(
+        req.text
+    )
     sentiment = infer_sentiment(req.text)
 
     primary, assets, entities = await _maybe_refine(req, primary, assets, entities)
@@ -294,6 +297,8 @@ async def parse(
         assets=assets,
         entities=entities,
         jurisdiction=jurisdiction,
+        jurisdiction_basis=jurisdiction_basis,
+        jurisdiction_confidence=jurisdiction_confidence,
         sentiment=sentiment,
         impact_score=primary.impact_score,
         confidence=primary.confidence,

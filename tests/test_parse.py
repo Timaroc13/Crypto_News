@@ -18,6 +18,10 @@ def test_parse_returns_schema_fields() -> None:
     assert "event_subtype" in data
     assert "schema_version" in data
     assert "model_version" in data
+    assert "jurisdiction_basis" in data
+    assert data["jurisdiction_basis"] in {"explicit", "implied", "none"}
+    assert "jurisdiction_confidence" in data
+    assert 0.0 <= data["jurisdiction_confidence"] <= 1.0
     assert 0.0 <= data["impact_score"] <= 1.0
     assert 0.0 <= data["confidence"] <= 1.0
 
