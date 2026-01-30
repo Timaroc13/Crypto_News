@@ -9,44 +9,41 @@ MAX_TEXT_LENGTH = 20_000
 
 
 class EventType(str, Enum):
-    # v2 primary taxonomy (MECE-ish) + explicit fallbacks.
+    # Primary taxonomy: user's MECE buckets + explicit fallbacks.
     UNKNOWN = "UNKNOWN"
     MISC_OTHER = "MISC_OTHER"
 
-    # Regulation / policy
-    REGULATORY_GUIDANCE = "REGULATORY_GUIDANCE"
-    CRYPTO_REGULATION_RESTRICTION = "CRYPTO_REGULATION_RESTRICTION"
-    CRYPTO_POLICY_MEETING = "CRYPTO_POLICY_MEETING"
+    # Regulation, Policy & Government
+    REGULATORY_ACTION_ENFORCEMENT = "REGULATORY_ACTION_ENFORCEMENT"
+    LEGISLATION_POLICY_DEVELOPMENT = "LEGISLATION_POLICY_DEVELOPMENT"
+    GOVERNMENT_CENTRAL_BANK_INITIATIVES = "GOVERNMENT_CENTRAL_BANK_INITIATIVES"
 
-    # Institutions / company actions
-    FUND_RAISE = "FUND_RAISE"
-    STRATEGIC_INVESTMENT = "STRATEGIC_INVESTMENT"
-    CORPORATE_BITCOIN_PURCHASE = "CORPORATE_BITCOIN_PURCHASE"
+    # Institutions, Markets & Capital
+    INSTITUTIONAL_ADOPTION_STRATEGY = "INSTITUTIONAL_ADOPTION_STRATEGY"
+    CAPITAL_MARKETS_ACTIVITY = "CAPITAL_MARKETS_ACTIVITY"
+    FUNDING_INVESTMENT_MA = "FUNDING_INVESTMENT_MA"
+    MARKET_STRUCTURE_LIQUIDITY_SHIFTS = "MARKET_STRUCTURE_LIQUIDITY_SHIFTS"
 
-    # Market conditions
-    CRYPTO_MARKET_VOLATILITY = "CRYPTO_MARKET_VOLATILITY"
-    MACRO_MARKET_SHOCK = "MACRO_MARKET_SHOCK"
+    # Companies & Organizations
+    COMPANY_FINANCIAL_PERFORMANCE = "COMPANY_FINANCIAL_PERFORMANCE"
+    CORPORATE_GOVERNANCE_LEADERSHIP_CHANGES = "CORPORATE_GOVERNANCE_LEADERSHIP_CHANGES"
+    BUSINESS_MODEL_STRATEGIC_PIVOT = "BUSINESS_MODEL_STRATEGIC_PIVOT"
 
-    # Networks / infrastructure
-    NETWORK_VALIDATOR_DECLINE = "NETWORK_VALIDATOR_DECLINE"
+    # Protocols, Networks & Technology
+    PROTOCOL_UPGRADES_NETWORK_CHANGES = "PROTOCOL_UPGRADES_NETWORK_CHANGES"
+    NEW_PROTOCOL_PRODUCT_LAUNCHES = "NEW_PROTOCOL_PRODUCT_LAUNCHES"
+    INTEROPERABILITY_INFRA_DEVELOPMENTS = "INTEROPERABILITY_INFRA_DEVELOPMENTS"
+    SECURITY_INCIDENTS_EXPLOITS = "SECURITY_INCIDENTS_EXPLOITS"
 
-    # Stablecoins
-    STABLECOIN_LAUNCH = "STABLECOIN_LAUNCH"
-    STABLECOIN_IMPACT_WARNING = "STABLECOIN_IMPACT_WARNING"
-    STABLECOIN_RESERVE_UPDATE = "STABLECOIN_RESERVE_UPDATE"
+    # Assets, Tokens & Economics
+    TOKEN_ECONOMICS_SUPPLY_EVENTS = "TOKEN_ECONOMICS_SUPPLY_EVENTS"
+    STABLECOINS_MONETARY_MECHANICS = "STABLECOINS_MONETARY_MECHANICS"
+    YIELD_RATES_RETURN_DYNAMICS = "YIELD_RATES_RETURN_DYNAMICS"
 
-    # Exchanges / payments
-    CRYPTO_EXCHANGE_PRODUCT_EXPANSION = "CRYPTO_EXCHANGE_PRODUCT_EXPANSION"
-    CRYPTO_PAYMENTS_COMPANY_UPDATE = "CRYPTO_PAYMENTS_COMPANY_UPDATE"
-
-    # Tokenization
-    TOKENIZED_ASSET_VOLUME_SURGE = "TOKENIZED_ASSET_VOLUME_SURGE"
-    TOKENIZED_EQUITIES_STRATEGY = "TOKENIZED_EQUITIES_STRATEGY"
-
-    # Capital markets
-    IPO_FILING = "IPO_FILING"
-    IPO_PLANNING = "IPO_PLANNING"
-    IPO_MARKET_DEBUT = "IPO_MARKET_DEBUT"
+    # Ecosystem & Use-Cases
+    RWA_DEVELOPMENTS = "RWA_DEVELOPMENTS"
+    PAYMENTS_COMMERCE_CONSUMER_ADOPTION = "PAYMENTS_COMMERCE_CONSUMER_ADOPTION"
+    ECOSYSTEM_PARTNERSHIPS_INTEGRATIONS = "ECOSYSTEM_PARTNERSHIPS_INTEGRATIONS"
 
 
 class EventTypeV1(str, Enum):
@@ -131,9 +128,12 @@ class ParseRequest(BaseModel):
         value = value.strip()
         if not value:
             return None
-        # Keep validation lightweight; we only accept http(s) to avoid ambiguity.
-        if not (value.startswith("http://") or value.startswith("https://")):
-            raise ValueError("source_url must start with http:// or https://")
+        if any(ch.isspace() for ch in value):
+            raise ValueError("source_url must not contain whitespace")
+        # Keep validation lightweight; accept absolute URLs/URIs (no fetching is performed).
+        # This supports schemes like https://, http://, synthetic://, ipfs://, etc.
+        if "://" not in value and not value.startswith("urn:"):
+            raise ValueError("source_url must be an absolute URL/URI (e.g., https://...)")
         if len(value) > 2048:
             raise ValueError("source_url is too long")
         return value

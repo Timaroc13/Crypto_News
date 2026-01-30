@@ -19,6 +19,10 @@ from crypto_news_parser.models import (
 def main() -> None:
     path = Path(__file__).resolve().parents[1] / "eval" / "golden_cases.jsonl"
     cases = load_golden_cases(path)
+
+    synth_path = Path(__file__).resolve().parents[1] / "eval" / "synthetic_cases.jsonl"
+    if synth_path.exists():
+        cases.extend(load_golden_cases(synth_path))
     strict = os.getenv("RUN_GOLDEN_STRICT") == "1"
 
     client = TestClient(app)
@@ -53,8 +57,6 @@ def main() -> None:
         comparable_expected = dict(expected)
 
         # Prefer v1_* mappings when present (lets dataset keep richer labels).
-        if "v1_event_type" in comparable_expected:
-            comparable_expected["event_type"] = comparable_expected.pop("v1_event_type")
         if "v1_jurisdiction" in comparable_expected:
             comparable_expected["jurisdiction"] = comparable_expected.pop("v1_jurisdiction")
         if not strict:

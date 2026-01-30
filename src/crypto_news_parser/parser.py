@@ -15,25 +15,26 @@ class CandidateEvent:
 
 _PRECEDENCE: dict[EventType, int] = {
     # Lower number = higher precedence (used only for tie-breaks).
-    EventType.CRYPTO_REGULATION_RESTRICTION: 1,
-    EventType.REGULATORY_GUIDANCE: 2,
-    EventType.STABLECOIN_LAUNCH: 3,
-    EventType.STABLECOIN_RESERVE_UPDATE: 3,
-    EventType.STABLECOIN_IMPACT_WARNING: 4,
-    EventType.FUND_RAISE: 5,
-    EventType.STRATEGIC_INVESTMENT: 5,
-    EventType.CORPORATE_BITCOIN_PURCHASE: 5,
-    EventType.IPO_FILING: 6,
-    EventType.IPO_MARKET_DEBUT: 6,
-    EventType.IPO_PLANNING: 6,
-    EventType.TOKENIZED_ASSET_VOLUME_SURGE: 7,
-    EventType.TOKENIZED_EQUITIES_STRATEGY: 7,
-    EventType.CRYPTO_EXCHANGE_PRODUCT_EXPANSION: 8,
-    EventType.CRYPTO_PAYMENTS_COMPANY_UPDATE: 8,
-    EventType.NETWORK_VALIDATOR_DECLINE: 9,
-    EventType.CRYPTO_MARKET_VOLATILITY: 10,
-    EventType.MACRO_MARKET_SHOCK: 10,
-    EventType.CRYPTO_POLICY_MEETING: 11,
+    EventType.SECURITY_INCIDENTS_EXPLOITS: 1,
+    EventType.REGULATORY_ACTION_ENFORCEMENT: 2,
+    EventType.STABLECOINS_MONETARY_MECHANICS: 3,
+    EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES: 4,
+    EventType.CAPITAL_MARKETS_ACTIVITY: 5,
+    EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS: 6,
+    EventType.FUNDING_INVESTMENT_MA: 7,
+    EventType.INSTITUTIONAL_ADOPTION_STRATEGY: 8,
+    EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES: 9,
+    EventType.INTEROPERABILITY_INFRA_DEVELOPMENTS: 10,
+    EventType.RWA_DEVELOPMENTS: 11,
+    EventType.PAYMENTS_COMMERCE_CONSUMER_ADOPTION: 12,
+    EventType.ECOSYSTEM_PARTNERSHIPS_INTEGRATIONS: 13,
+    EventType.LEGISLATION_POLICY_DEVELOPMENT: 14,
+    EventType.GOVERNMENT_CENTRAL_BANK_INITIATIVES: 15,
+    EventType.COMPANY_FINANCIAL_PERFORMANCE: 16,
+    EventType.CORPORATE_GOVERNANCE_LEADERSHIP_CHANGES: 17,
+    EventType.BUSINESS_MODEL_STRATEGIC_PIVOT: 18,
+    EventType.TOKEN_ECONOMICS_SUPPLY_EVENTS: 19,
+    EventType.YIELD_RATES_RETURN_DYNAMICS: 20,
     EventType.MISC_OTHER: 98,
     EventType.UNKNOWN: 99,
 }
@@ -133,12 +134,23 @@ def _is_crypto_related(text: str) -> bool:
         "bitcoin",
         "ethereum",
         "stablecoin",
+        "cbdc",
+        "central bank digital currency",
         "token",
         "defi",
         "exchange",
         "wallet",
         "web3",
         "onchain",
+        "mainnet",
+        "testnet",
+        "devnet",
+        "layer-1",
+        "layer 1",
+        "layer-2",
+        "layer 2",
+        "staking",
+        "validator",
     ]
     if any(cue in t for cue in crypto_cues):
         return True
@@ -269,6 +281,7 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
     if has_any(
         r"\bunited states\b",
         r"\bu\.?s\.?\b",
+        r"\bwhite house\b",
         r"\bsec\b",
         r"\bcftc\b",
         r"\bdoj\b",
@@ -280,6 +293,7 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
     if has_any(
         r"\beuropean union\b",
         r"\beu\b",
+        r"\beuropean\b",
         r"\besma\b",
         r"\bmica\b",
         r"\becb\b",
@@ -290,6 +304,10 @@ def resolve_jurisdiction(text: str) -> Jurisdiction:
         r"\brussian\b",
         r"\bmoscow\b",
     ):
+        return Jurisdiction.EUROPE
+
+    # Currency cues (heuristic): treat € as EUROPE.
+    if "€" in text:
         return Jurisdiction.EUROPE
 
     if has_any(
@@ -343,8 +361,9 @@ def infer_event_subtype(text: str, event_type: EventType) -> str | None:
 
     t = text.lower()
 
-    if event_type == EventType.CRYPTO_REGULATION_RESTRICTION:
-        if any(w in t for w in ["lawsuit", "sues", "sued", "sue "]):
+    if event_type == EventType.REGULATORY_ACTION_ENFORCEMENT:
+        # Use word boundaries to avoid false positives (e.g., "issued" contains "sued").
+        if re.search(r"\b(lawsuit|sue|sues|sued)\b", t):
             return "regulation.enforcement.lawsuit"
         if any(w in t for w in ["fine", "penalty", "fined", "civil penalty"]):
             return "regulation.enforcement.fine"
@@ -352,67 +371,196 @@ def infer_event_subtype(text: str, event_type: EventType) -> str | None:
             return "regulation.enforcement.settlement"
         if any(w in t for w in ["ban", "banned", "prohibit", "prohibited", "restriction"]):
             return "regulation.restriction"
+        if any(w in t for w in ["investigation", "probe"]):
+            return "regulation.enforcement.investigation"
+        if any(w in t for w in ["cease and desist", "cease-and-desist", "c&d"]):
+            return "regulation.enforcement.cease_and_desist"
         return None
 
-    if event_type == EventType.REGULATORY_GUIDANCE:
-        if any(w in t for w in ["bill", "draft bill", "policy", "framework", "consultation"]):
+    if event_type == EventType.LEGISLATION_POLICY_DEVELOPMENT:
+        if any(w in t for w in ["meeting", "summit", "hearing", "roundtable"]):
+            return "regulation.policy.meeting"
+        if any(
+            w in t
+            for w in [
+                "bill",
+                "draft bill",
+                "executive order",
+                "policy",
+                "framework",
+                "consultation",
+            ]
+        ):
             return "regulation.policy"
         if any(w in t for w in ["guidance", "clarified", "clarifies", "rules"]):
             return "regulation.guidance"
         return None
 
-    if event_type == EventType.CRYPTO_POLICY_MEETING:
-        return "regulation.policy.meeting"
+    if event_type == EventType.GOVERNMENT_CENTRAL_BANK_INITIATIVES:
+        return "government.initiative"
 
-    if event_type == EventType.STABLECOIN_LAUNCH:
-        if "registered" in t or "registration" in t:
-            return "stablecoin.launch.registered"
-        return "stablecoin.launch"
+    if event_type == EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES:
+        if "stablecoin" in t:
+            if "registered" in t or "registration" in t:
+                return "stablecoin.launch.registered"
+            return "stablecoin.launch"
+        if "mainnet" in t and any(w in t for w in ["launch", "launched", "launches"]):
+            return "protocol.launch.mainnet"
+        return "protocol.launch"
 
-    if event_type == EventType.STABLECOIN_RESERVE_UPDATE:
-        return "stablecoin.reserves.update"
+    if event_type == EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES:
+        if "hard fork" in t:
+            return "protocol.upgrade.hard_fork"
+        if "mainnet" in t and "upgrade" in t:
+            return "protocol.upgrade.mainnet"
+        if "upgrade" in t:
+            return "protocol.upgrade.upgrade"
+        if any(w in t for w in ["validator", "validators"]) and any(
+            w in t for w in ["decline", "dropped", "fallen", "drop", "down"]
+        ):
+            return "network.validators.decline"
+        return None
 
-    if event_type == EventType.STABLECOIN_IMPACT_WARNING:
-        return "stablecoin.risk.warning"
+    if event_type == EventType.SECURITY_INCIDENTS_EXPLOITS:
+        if "breach" in t:
+            return "security.breach"
+        if "exploit" in t:
+            return "security.exploit"
+        if any(w in t for w in ["validator", "validators"]) and any(
+            w in t for w in ["failure", "failed", "slash", "slashed", "outage"]
+        ):
+            return "security.validator_failure"
+        return "security.incident"
 
-    if event_type == EventType.FUND_RAISE:
+    if event_type == EventType.FUNDING_INVESTMENT_MA:
+        if any(w in t for w in ["acquired", "acquisition", "merge", "merged", "merger"]):
+            return "institutions.ma"
         return "institutions.funding"
 
-    if event_type == EventType.STRATEGIC_INVESTMENT:
-        return "institutions.investment"
+    if event_type == EventType.INSTITUTIONAL_ADOPTION_STRATEGY:
+        if ("bitcoin" in t or "btc" in t) and any(
+            w in t
+            for w in [
+                "purchased",
+                "purchase",
+                "buys",
+                "bought",
+                "acquired",
+                "added",
+            ]
+        ):
+            return "institutions.treasury.btc_purchase"
+        return "institutions.adoption"
 
-    if event_type == EventType.CORPORATE_BITCOIN_PURCHASE:
-        return "institutions.treasury.btc_purchase"
+    if event_type == EventType.CAPITAL_MARKETS_ACTIVITY:
+        if "ipo" in t and any(w in t for w in ["filed", "filing", "f-1", "s-1"]):
+            return "capital_markets.ipo.filing"
+        if "ipo" in t and any(w in t for w in ["plans", "planning", "considering", "exploring"]):
+            return "capital_markets.ipo.planning"
+        # Allow IPO-debut inference without literal "ipo" if the story says "market debut" on a major exchange.
+        if any(w in t for w in ["market debut", "first day of trading", "began trading", "priced", "debut"]):
+            if any(w in t for w in ["nyse", "nasdaq"]):
+                return "capital_markets.ipo.market_debut"
+        if "ipo" in t and any(w in t for w in ["debut", "began trading", "priced", "listed"]):
+            return "capital_markets.ipo.market_debut"
+        if any(w in t for w in ["listing", "listed on", "up-list", "uplisting", "up listing"]):
+            return "capital_markets.listing"
+        if any(w in t for w in ["delist", "delisted", "delisting"]):
+            return "capital_markets.delisting"
+        return None
 
-    if event_type == EventType.CRYPTO_MARKET_VOLATILITY:
-        return "markets.volatility"
+    if event_type == EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS:
+        if "tvl" in t or "total value locked" in t:
+            return "market_structure.tvl"
+        if "stablecoin" in t and any(w in t for w in ["supply", "issuance", "mint", "burn"]):
+            return "market_structure.stablecoin_supply"
+        if "exchange" in t and any(
+            w in t
+            for w in [
+                "product",
+                "launched",
+                "roll out",
+                "rolled out",
+                "derivatives",
+                "options",
+            ]
+        ):
+            return "market_structure.exchange.product_expansion"
+        if any(
+            w in t
+            for w in [
+                "volatility",
+                "sell-off",
+                "selloff",
+                "plunge",
+                "dump",
+                "rally",
+                "surge",
+                "crash",
+            ]
+        ):
+            return "markets.volatility"
+        return None
 
-    if event_type == EventType.MACRO_MARKET_SHOCK:
-        return "macro.shock"
+    if event_type == EventType.COMPANY_FINANCIAL_PERFORMANCE:
+        if "reserve" in t or "reserves" in t:
+            return "company.reserves"
+        return "company.financials"
 
-    if event_type == EventType.NETWORK_VALIDATOR_DECLINE:
-        return "network.validators.decline"
+    if event_type == EventType.CORPORATE_GOVERNANCE_LEADERSHIP_CHANGES:
+        if any(w in t for w in ["ceo", "cfo", "chair", "board"]):
+            return "company.leadership"
+        if any(w in t for w in ["layoff", "layoffs", "restructuring"]):
+            return "company.restructuring"
+        return "company.governance"
 
-    if event_type == EventType.CRYPTO_EXCHANGE_PRODUCT_EXPANSION:
-        return "market_structure.exchange.product_expansion"
+    if event_type == EventType.BUSINESS_MODEL_STRATEGIC_PIVOT:
+        return "company.pivot"
 
-    if event_type == EventType.CRYPTO_PAYMENTS_COMPANY_UPDATE:
-        return "payments.company.update"
+    if event_type == EventType.TOKEN_ECONOMICS_SUPPLY_EVENTS:
+        if any(w in t for w in ["unlock", "vesting"]):
+            return "tokenomics.unlock"
+        if any(w in t for w in ["burn", "burned"]):
+            return "tokenomics.burn"
+        if any(w in t for w in ["mint", "minted", "emissions"]):
+            return "tokenomics.mint"
+        return "tokenomics.supply"
 
-    if event_type == EventType.TOKENIZED_ASSET_VOLUME_SURGE:
-        return "tokenization.asset.volume_surge"
+    if event_type == EventType.STABLECOINS_MONETARY_MECHANICS:
+        if "depeg" in t or "lost its peg" in t or "lost the peg" in t:
+            return "stablecoin.depeg"
+        if any(w in t for w in ["reserve", "reserves", "attestation", "audit", "backing"]):
+            return "stablecoin.reserves.update"
+        if any(w in t for w in ["yield", "yield model"]):
+            return "stablecoin.yield"
+        if any(w in t for w in ["warning", "warned", "risk", "threat", "impact"]):
+            return "stablecoin.risk.warning"
+        return "stablecoin.monetary_mechanics"
 
-    if event_type == EventType.TOKENIZED_EQUITIES_STRATEGY:
-        return "tokenization.equities.strategy"
+    if event_type == EventType.YIELD_RATES_RETURN_DYNAMICS:
+        if any(w in t for w in ["apy", "yield", "staking"]):
+            return "yield.staking"
+        return "yield.rates"
 
-    if event_type == EventType.IPO_FILING:
-        return "capital_markets.ipo.filing"
+    if event_type == EventType.RWA_DEVELOPMENTS:
+        if "tokenized" in t:
+            return "rwa.tokenization"
+        return "rwa.development"
 
-    if event_type == EventType.IPO_PLANNING:
-        return "capital_markets.ipo.planning"
+    if event_type == EventType.PAYMENTS_COMMERCE_CONSUMER_ADOPTION:
+        return "payments.adoption"
 
-    if event_type == EventType.IPO_MARKET_DEBUT:
-        return "capital_markets.ipo.market_debut"
+    if event_type == EventType.INTEROPERABILITY_INFRA_DEVELOPMENTS:
+        if "bridge" in t:
+            return "infrastructure.bridge"
+        if "wallet" in t:
+            return "infrastructure.wallet"
+        if any(w in t for w in ["cross-chain", "cross chain", "messaging"]):
+            return "infrastructure.cross_chain"
+        return "infrastructure.development"
+
+    if event_type == EventType.ECOSYSTEM_PARTNERSHIPS_INTEGRATIONS:
+        return "ecosystem.partnership"
 
     if event_type == EventType.MISC_OTHER:
         # Preserve some high-signal subtypes for common crypto narratives.
@@ -455,8 +603,12 @@ def _candidates(text: str) -> list[CandidateEvent]:
 
     regulators = ["sec", "cftc", "doj", "finra", "fca", "esma", "ofac", "regulator"]
 
-    # Regulation / restrictions (includes enforcement-like language).
-    restriction_words = [
+    # Security incidents & exploits
+    if any(w in t for w in ["hack", "exploit", "breach", "bug", "drained", "compromised"]):
+        add(EventType.SECURITY_INCIDENTS_EXPLOITS, confidence=0.74, impact_score=0.9)
+
+    # Regulatory action & enforcement
+    enforcement_words = [
         "lawsuit",
         "sues",
         "sued",
@@ -464,45 +616,71 @@ def _candidates(text: str) -> list[CandidateEvent]:
         "charged",
         "indict",
         "indicted",
-        "ban",
-        "banned",
-        "prohibit",
-        "prohibited",
-        "restriction",
-        "restricted",
-        "crackdown",
+        "fine",
+        "penalty",
+        "settlement",
+        "investigation",
+        "probe",
+        "cease and desist",
+        "cease-and-desist",
+        "c&d",
     ]
-    if any(w in t for w in restriction_words) and any(r in t for r in regulators):
-        add(EventType.CRYPTO_REGULATION_RESTRICTION, confidence=0.72, impact_score=0.85)
+    if any(w in t for w in enforcement_words) and any(r in t for r in regulators):
+        add(EventType.REGULATORY_ACTION_ENFORCEMENT, confidence=0.72, impact_score=0.85)
 
-    guidance_words = [
+    # Legislation & policy development
+    policy_words = [
+        "draft bill",
+        "consultation",
+        "executive order",
+        "policy framework",
+        "framework",
         "guidance",
         "clarified",
         "clarifies",
         "rules",
-        "framework",
-        "consultation",
-        "bill",
-        "draft bill",
-        "policy",
+        "hearing",
+        "roundtable",
+        "summit",
+        "meeting",
     ]
-    if any(w in t for w in guidance_words) and (_is_crypto_related(text) or any(r in t for r in regulators)):
-        add(EventType.REGULATORY_GUIDANCE, confidence=0.66, impact_score=0.65)
 
-    if any(w in t for w in ["meeting", "summit", "hearing", "roundtable"]) and any(
-        r in t for r in regulators
+    has_legislation_language = any(w in t for w in policy_words) or (
+        re.search(r"\b(draft\s+)?bill(s)?\b", t) is not None
+        and re.search(r"\b(treasury\s+bill(s)?|t-?bill(s)?|tbill(s)?)\b", t) is None
+    )
+
+    if has_legislation_language and (
+        _is_crypto_related(text) or any(r in t for r in regulators)
     ):
-        add(EventType.CRYPTO_POLICY_MEETING, confidence=0.62, impact_score=0.55)
+        add(EventType.LEGISLATION_POLICY_DEVELOPMENT, confidence=0.66, impact_score=0.65)
 
-    # Stablecoins
-    if "stablecoin" in t and any(w in t for w in ["launch", "launched", "launches", "introduced"]):
-        add(EventType.STABLECOIN_LAUNCH, confidence=0.7, impact_score=0.7)
-    if "stablecoin" in t and any(w in t for w in ["reserve", "reserves", "attestation", "audit"]):
-        add(EventType.STABLECOIN_RESERVE_UPDATE, confidence=0.68, impact_score=0.65)
-    if "stablecoin" in t and any(w in t for w in ["warning", "warned", "risk", "threat", "impact"]):
-        add(EventType.STABLECOIN_IMPACT_WARNING, confidence=0.6, impact_score=0.55)
+    # Government & central bank initiatives
+    gov_words = [
+        "cbdc",
+        "central bank digital currency",
+        "tokenization pilot",
+        "public-sector",
+        "public sector",
+        "treasury",
+        "ministry",
+        "central bank",
+    ]
+    if any(w in t for w in gov_words) and _is_crypto_related(text):
+        add(EventType.GOVERNMENT_CENTRAL_BANK_INITIATIVES, confidence=0.62, impact_score=0.6)
 
-    # Institutions / funding
+    # Capital markets activity
+    if any(w in t for w in ["ipo", "spac", "public offering", "market debut"]):
+        add(EventType.CAPITAL_MARKETS_ACTIVITY, confidence=0.66, impact_score=0.6)
+    # Avoid false positives where "listed" is just an adjective ("a listed company reported revenue...").
+    if (
+        any(w in t for w in ["listing", "delist", "delisted", "delisting"])
+        or re.search(r"\blisted\s+on\b", t)
+        or re.search(r"\b(up-list|uplisting|up listing)\b", t)
+    ):
+        add(EventType.CAPITAL_MARKETS_ACTIVITY, confidence=0.6, impact_score=0.55)
+
+    # Funding, investment & M&A
     if any(
         w in t
         for w in [
@@ -514,20 +692,72 @@ def _candidates(text: str) -> list[CandidateEvent]:
             "raise",
             "seed round",
             "venture",
+            "strategic investment",
+            "invested",
+            "investment",
+            "acquired",
+            "acquisition",
+            "merge",
+            "merged",
+            "merger",
         ]
     ):
-        add(EventType.FUND_RAISE, confidence=0.65, impact_score=0.6)
+        add(EventType.FUNDING_INVESTMENT_MA, confidence=0.64, impact_score=0.6)
 
-    if any(w in t for w in ["strategic investment", "invested", "investment", "took a stake", "stake"]):
-        add(EventType.STRATEGIC_INVESTMENT, confidence=0.6, impact_score=0.55)
-
+    # Institutional adoption & strategy
+    institution_words = [
+        "bank",
+        "asset manager",
+        "asset management",
+        "custody",
+        "custodian",
+        "corporate",
+        "treasury",
+    ]
+    if _is_crypto_related(text) and any(w in t for w in institution_words):
+        add(EventType.INSTITUTIONAL_ADOPTION_STRATEGY, confidence=0.58, impact_score=0.55)
     if ("bitcoin" in t or "btc" in t) and any(
-        w in t for w in ["purchased", "purchase", "buys", "bought", "acquired", "added"]
-    ) and any(w in t for w in ["company", "firm", "treasury", "strategy"]):
-        add(EventType.CORPORATE_BITCOIN_PURCHASE, confidence=0.66, impact_score=0.6)
+        w in t
+        for w in [
+            "purchased",
+            "purchase",
+            "buys",
+            "bought",
+            "acquired",
+            "added",
+        ]
+    ):
+        add(EventType.INSTITUTIONAL_ADOPTION_STRATEGY, confidence=0.62, impact_score=0.6)
 
-    # Markets
-    if _is_crypto_related(text) and any(
+    # Market structure & liquidity shifts
+    if any(
+        w in t
+        for w in [
+            "tvl",
+            "total value locked",
+            "liquidity",
+            "market share",
+            "flows",
+            "inflow",
+            "outflow",
+        ]
+    ):
+        add(EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS, confidence=0.58, impact_score=0.5)
+    if "stablecoin" in t and any(w in t for w in ["supply", "issuance", "mint", "burn"]):
+        add(EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS, confidence=0.6, impact_score=0.55)
+    if "exchange" in t and any(
+        w in t
+        for w in [
+            "product",
+            "launched",
+            "roll out",
+            "rolled out",
+            "derivatives",
+            "options",
+        ]
+    ):
+        add(EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS, confidence=0.58, impact_score=0.5)
+    if any(
         w in t
         for w in [
             "volatility",
@@ -539,41 +769,186 @@ def _candidates(text: str) -> list[CandidateEvent]:
             "surge",
             "crash",
         ]
+    ) and _is_crypto_related(text) and any(
+        w in t
+        for w in [
+            "btc",
+            "bitcoin",
+            "eth",
+            "ethereum",
+            "crypto market",
+            "altcoin",
+        ]
     ):
-        add(EventType.CRYPTO_MARKET_VOLATILITY, confidence=0.58, impact_score=0.55)
+        add(EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS, confidence=0.6, impact_score=0.5)
 
-    if any(w in t for w in ["fed", "interest rate", "inflation", "recession", "jobs report"]):
-        add(EventType.MACRO_MARKET_SHOCK, confidence=0.55, impact_score=0.5)
-
-    # Network health
+    # Protocol upgrades & network changes
+    if any(
+        w in t
+        for w in [
+            "upgrade",
+            "hard fork",
+            "fork",
+            "consensus",
+            "parameter change",
+            "mainnet upgrade",
+        ]
+    ):
+        add(EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES, confidence=0.62, impact_score=0.6)
+    if (
+        re.search(r"\brelease\s+v?\d+(?:\.\d+)*\b", t)
+        and any(w in t for w in ["protocol", "client", "node", "mainnet", "testnet"])
+        and _is_crypto_related(text)
+    ):
+        add(EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES, confidence=0.58, impact_score=0.5)
     if any(w in t for w in ["validator", "validators"]) and any(
-        w in t for w in ["decline", "dropped", "fallen", "drop", "down"]
+        w in t
+        for w in [
+            "decline",
+            "dropped",
+            "fallen",
+            "drop",
+            "down",
+            "failed",
+            "failure",
+            "outage",
+        ]
     ):
-        add(EventType.NETWORK_VALIDATOR_DECLINE, confidence=0.65, impact_score=0.55)
+        add(EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES, confidence=0.6, impact_score=0.55)
 
-    # Exchanges / payments
-    if "exchange" in t and any(
-        w in t for w in ["launched", "launches", "roll out", "rolled out", "product", "derivatives", "options"]
+    # New protocol / product launches (includes new stablecoins)
+    if (
+        any(w in t for w in ["mainnet launch", "launched mainnet", "launches mainnet"])
+        and _is_crypto_related(text)
     ):
-        add(EventType.CRYPTO_EXCHANGE_PRODUCT_EXPANSION, confidence=0.6, impact_score=0.5)
+        add(EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES, confidence=0.62, impact_score=0.55)
+    if "stablecoin" in t and any(w in t for w in ["launch", "launched", "launches", "introduced"]):
+        add(EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES, confidence=0.7, impact_score=0.7)
 
-    if any(w in t for w in ["payments", "payment", "settlement"]) and _is_crypto_related(text):
-        add(EventType.CRYPTO_PAYMENTS_COMPANY_UPDATE, confidence=0.58, impact_score=0.45)
+    # Interoperability & infrastructure developments
+    if any(
+        w in t
+        for w in [
+            "bridge",
+            "cross-chain",
+            "cross chain",
+            "messaging",
+            "wallet",
+            "tooling",
+        ]
+    ):
+        add(EventType.INTEROPERABILITY_INFRA_DEVELOPMENTS, confidence=0.58, impact_score=0.5)
 
-    # Tokenization
-    if "tokenized" in t and any(w in t for w in ["volume", "volumes", "trading volume", "surged", "surge"]):
-        add(EventType.TOKENIZED_ASSET_VOLUME_SURGE, confidence=0.65, impact_score=0.55)
+    # Token economics & supply events
+    if any(w in t for w in ["mint", "minted", "burn", "burned", "unlock", "vesting", "emissions"]):
+        add(EventType.TOKEN_ECONOMICS_SUPPLY_EVENTS, confidence=0.58, impact_score=0.5)
 
-    if "tokenized" in t and any(w in t for w in ["stock", "stocks", "equity", "equities"]):
-        add(EventType.TOKENIZED_EQUITIES_STRATEGY, confidence=0.65, impact_score=0.55)
+    # Stablecoins & monetary mechanics
+    if "stablecoin" in t and any(
+        w in t
+        for w in [
+            "depeg",
+            "lost its peg",
+            "reserve",
+            "reserves",
+            "attestation",
+            "audit",
+            "backing",
+            "collateral",
+            "redemption",
+        ]
+    ):
+        add(EventType.STABLECOINS_MONETARY_MECHANICS, confidence=0.62, impact_score=0.6)
+    if "stablecoin" in t and any(
+        w in t
+        for w in [
+            "freeze",
+            "frozen",
+            "halted",
+            "halt",
+            "bank run",
+            "run on",
+            "liquidity",
+            "insolvency",
+            "insolvent",
+        ]
+    ):
+        add(EventType.STABLECOINS_MONETARY_MECHANICS, confidence=0.6, impact_score=0.65)
 
-    # IPOs
-    if "ipo" in t and any(w in t for w in ["filed", "filing", "f-1", "s-1"]):
-        add(EventType.IPO_FILING, confidence=0.7, impact_score=0.6)
-    if "ipo" in t and any(w in t for w in ["plans", "planning", "considering", "exploring"]):
-        add(EventType.IPO_PLANNING, confidence=0.62, impact_score=0.5)
-    if "ipo" in t and any(w in t for w in ["debut", "began trading", "priced", "listed"]):
-        add(EventType.IPO_MARKET_DEBUT, confidence=0.68, impact_score=0.55)
+    # Yield, rates & return dynamics
+    if any(w in t for w in ["apy", "apr", "staking yield", "yield", "incentives"]):
+        add(EventType.YIELD_RATES_RETURN_DYNAMICS, confidence=0.55, impact_score=0.45)
+    if "staking" in t and (
+        any(w in t for w in ["apy", "apr", "yield"])
+        or re.search(r"\b\d+(?:\.\d+)?\s*%\b", t)
+    ):
+        add(EventType.YIELD_RATES_RETURN_DYNAMICS, confidence=0.56, impact_score=0.45)
+    if re.search(r"\b(interest|borrow|lending|deposit|funding)\s+rate(s)?\b", t):
+        add(EventType.YIELD_RATES_RETURN_DYNAMICS, confidence=0.54, impact_score=0.45)
+
+    # RWA developments
+    if any(
+        w in t
+        for w in [
+            "tokenized bond",
+            "tokenized bonds",
+            "tokenized",
+            "commodities",
+            "real estate",
+            "credit",
+            "funds",
+        ]
+    ):
+        add(EventType.RWA_DEVELOPMENTS, confidence=0.58, impact_score=0.5)
+
+    # Payments, commerce & consumer adoption
+    payment_terms = [
+        "payments",
+        "payment",
+        "merchant",
+        "commerce",
+        "remittance",
+        "payment rails",
+        "checkout",
+    ]
+    payment_actions = [
+        "enabled",
+        "enable",
+        "allowing",
+        "allow",
+        "pay with",
+        "accept",
+        "accepted",
+        "payout",
+        "payouts",
+        "settlement",
+        "transfers",
+        "transfer",
+    ]
+    if any(term in t for term in payment_terms) and any(action in t for action in payment_actions):
+        add(EventType.PAYMENTS_COMMERCE_CONSUMER_ADOPTION, confidence=0.58, impact_score=0.5)
+
+    # Ecosystem partnerships & integrations
+    if any(
+        w in t
+        for w in [
+            "partnership",
+            "partnered",
+            "integration",
+            "integrated",
+            "collaboration",
+            "alliance",
+        ]
+    ):
+        add(EventType.ECOSYSTEM_PARTNERSHIPS_INTEGRATIONS, confidence=0.55, impact_score=0.45)
+
+    # Company buckets
+    if any(w in t for w in ["earnings", "revenue", "balance sheet", "profit", "profitability"]):
+        add(EventType.COMPANY_FINANCIAL_PERFORMANCE, confidence=0.55, impact_score=0.45)
+    if any(w in t for w in ["ceo", "cfo", "board", "chair", "layoffs", "restructuring"]):
+        add(EventType.CORPORATE_GOVERNANCE_LEADERSHIP_CHANGES, confidence=0.55, impact_score=0.45)
+    if any(w in t for w in ["pivot", "refocus", "exiting", "exit", "entering", "geographic exit"]):
+        add(EventType.BUSINESS_MODEL_STRATEGIC_PIVOT, confidence=0.6, impact_score=0.55)
 
     return candidates
 
@@ -582,7 +957,11 @@ def select_primary_event(text: str) -> CandidateEvent:
     candidates = _candidates(text)
     if not candidates:
         if _is_crypto_related(text):
-            return CandidateEvent(event_type=EventType.MISC_OTHER, confidence=0.45, impact_score=0.25)
+            return CandidateEvent(
+                event_type=EventType.MISC_OTHER,
+                confidence=0.45,
+                impact_score=0.25,
+            )
         return CandidateEvent(event_type=EventType.UNKNOWN, confidence=0.4, impact_score=0.2)
 
     # Highest impact wins; then confidence; then precedence; then first-mention order.

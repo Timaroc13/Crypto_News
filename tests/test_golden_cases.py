@@ -13,6 +13,10 @@ def test_golden_cases_match_expected_minimums() -> None:
         return
 
     cases = load_golden_cases(path)
+
+    synth_path = Path(__file__).resolve().parents[1] / "eval" / "synthetic_cases.jsonl"
+    if synth_path.exists():
+        cases.extend(load_golden_cases(synth_path))
     # Skip if user hasn't added cases yet (keep CI green on fresh scaffold).
     if len(cases) <= 1:
         return

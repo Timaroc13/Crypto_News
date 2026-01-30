@@ -4,15 +4,15 @@ import json
 from pathlib import Path
 
 from crypto_news_parser.golden import load_golden_cases
-from crypto_news_parser.models import EventType, Jurisdiction
+from crypto_news_parser.models import EventTypeV1, Jurisdiction
 
 
 def map_to_v1_event_type(label: str | None, text: str) -> str:
     if not label:
-        return EventType.UNKNOWN.value
+        return EventTypeV1.UNKNOWN.value
 
     # If it's already a v1 enum value, keep it.
-    if label in {e.value for e in EventType}:
+    if label in {e.value for e in EventTypeV1}:
         return label
 
     label_upper = label.upper()
@@ -22,7 +22,7 @@ def map_to_v1_event_type(label: str | None, text: str) -> str:
     if "STABLECOIN" in label_upper and any(
         k in t for k in ["issu", "mint", "launched", "registered", "backed"]
     ):
-        return EventType.STABLECOIN_ISSUANCE.value
+        return EventTypeV1.STABLECOIN_ISSUANCE.value
 
     if (
         "DEPEG" in label_upper
@@ -30,10 +30,10 @@ def map_to_v1_event_type(label: str | None, text: str) -> str:
         or "lost its peg" in t
         or "trading below $1" in t
     ):
-        return EventType.STABLECOIN_DEPEG.value
+        return EventTypeV1.STABLECOIN_DEPEG.value
 
     if any(k in label_upper for k in ["HACK", "EXPLOIT", "BREACH"]):
-        return EventType.EXCHANGE_HACK.value
+        return EventTypeV1.EXCHANGE_HACK.value
 
     if any(
         k in label_upper
@@ -41,17 +41,17 @@ def map_to_v1_event_type(label: str | None, text: str) -> str:
     ):
         # If they used a custom but close ETF label, attempt to match.
         for et in [
-            EventType.ETF_APPROVAL,
-            EventType.ETF_REJECTION,
-            EventType.ETF_FILING,
-            EventType.ETF_INFLOW,
-            EventType.ETF_OUTFLOW,
+            EventTypeV1.ETF_APPROVAL,
+            EventTypeV1.ETF_REJECTION,
+            EventTypeV1.ETF_FILING,
+            EventTypeV1.ETF_INFLOW,
+            EventTypeV1.ETF_OUTFLOW,
         ]:
             if et.value in label_upper:
                 return et.value
 
     # Enforcement-ish labels are often ambiguous (guidance vs action); keep UNKNOWN for now.
-    return EventType.UNKNOWN.value
+    return EventTypeV1.UNKNOWN.value
 
 
 def map_to_v1_jurisdiction(label: str | None) -> str:

@@ -5,7 +5,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "The U.S. SEC clarified that tokenized stocks and synthetic equity products remain subject to existing securities laws, increasing scrutiny on third-party tokenization models.",
   "expected": {
-    "event_type": "REGULATORY_GUIDANCE",
+    "event_type": "LEGISLATION_POLICY_DEVELOPMENT",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -18,7 +18,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Sygnum Bank and Starboard raised more than 750 BTC for a market-neutral bitcoin yield fund targeting institutional investors.",
   "expected": {
-    "event_type": "FUND_RAISE",
+    "event_type": "FUNDING_INVESTMENT_MA",
     "jurisdiction": "GLOBAL",
     "assets": [
       "BTC"
@@ -34,7 +34,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Solana’s validator count has fallen roughly 68% from its 2023 peak, raising concerns about network decentralization and validator economics.",
   "expected": {
-    "event_type": "NETWORK_VALIDATOR_DECLINE",
+    "event_type": "PROTOCOL_UPGRADES_NETWORK_CHANGES",
     "jurisdiction": "GLOBAL",
     "assets": [
       "SOL"
@@ -50,7 +50,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "OSL Group raised $200 million to expand its stablecoin-based payments and financial services infrastructure.",
   "expected": {
-    "event_type": "FUND_RAISE",
+    "event_type": "FUNDING_INVESTMENT_MA",
     "jurisdiction": "HONG_KONG",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "ASIA"
@@ -63,7 +63,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "The UAE has launched its first USD-backed stablecoin registered with the country’s central bank, marking a regulated entry into digital dollar issuance.",
   "expected": {
-    "event_type": "STABLECOIN_LAUNCH",
+    "event_type": "NEW_PROTOCOL_PRODUCT_LAUNCHES",
     "jurisdiction": "UAE",
     "v1_event_type": "STABLECOIN_ISSUANCE",
     "v1_jurisdiction": "ASIA"
@@ -76,7 +76,7 @@
   "source_published_at": "2026-01-20T00:00:00Z",
   "text": "Trading volumes for tokenized gold products surpassed those of most gold ETFs as gold prices rallied toward $5,000 per ounce.",
   "expected": {
-    "event_type": "TOKENIZED_ASSET_VOLUME_SURGE",
+    "event_type": "RWA_DEVELOPMENTS",
     "jurisdiction": "GLOBAL",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
@@ -89,7 +89,7 @@
   "source_published_at": "2026-01-20T00:00:00Z",
   "text": "Michael Saylor’s firm Strategy purchased an additional $2.13 billion worth of bitcoin, further increasing its corporate bitcoin treasury holdings.",
   "expected": {
-    "event_type": "CORPORATE_BITCOIN_PURCHASE",
+    "event_type": "INSTITUTIONAL_ADOPTION_STRATEGY",
     "jurisdiction": "US",
     "assets": [
       "BTC"
@@ -105,7 +105,7 @@
   "source_published_at": "2026-01-20T00:00:00Z",
   "text": "Bitcoin briefly fell below $90,000 amid a broader global market sell-off before recovering.",
   "expected": {
-    "event_type": "CRYPTO_MARKET_VOLATILITY",
+    "event_type": "MARKET_STRUCTURE_LIQUIDITY_SHIFTS",
     "jurisdiction": "GLOBAL",
     "assets": [
       "BTC"
@@ -121,7 +121,7 @@
   "source_published_at": "2026-01-20T00:00:00Z",
   "text": "Global financial markets experienced sharp volatility as investors reacted to macroeconomic and geopolitical uncertainty, impacting equities, bonds, and cryptocurrencies.",
   "expected": {
-    "event_type": "MACRO_MARKET_SHOCK",
+    "event_type": "MARKET_STRUCTURE_LIQUIDITY_SHIFTS",
     "jurisdiction": "GLOBAL",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
@@ -134,7 +134,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Crypto payments firm BCB Group announced strategic changes to its operations amid ongoing restructuring efforts in its banking and payments business.",
   "expected": {
-    "event_type": "CRYPTO_PAYMENTS_COMPANY_UPDATE",
+    "event_type": "PAYMENTS_COMMERCE_CONSUMER_ADOPTION",
     "jurisdiction": "EUROPE",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "EUROPE"
@@ -147,7 +147,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Sony Innovation Fund invested $13 million in Startale Group, a core developer of the Soneium Layer 2 blockchain ecosystem.",
   "expected": {
-    "event_type": "STRATEGIC_INVESTMENT",
+    "event_type": "FUNDING_INVESTMENT_MA",
     "jurisdiction": "JAPAN",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "ASIA"
@@ -160,7 +160,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Crypto exchange Bybit plans to roll out IBAN accounts and neobank-style features, expanding into crypto-linked financial services.",
   "expected": {
-    "event_type": "CRYPTO_EXCHANGE_PRODUCT_EXPANSION",
+    "event_type": "MARKET_STRUCTURE_LIQUIDITY_SHIFTS",
     "jurisdiction": "EUROPE",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "EUROPE"
@@ -173,7 +173,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Robinhood’s CEO stated the company wants tokenized stocks to trade onchain 24/7, signaling renewed interest in blockchain-based equity markets.",
   "expected": {
-    "event_type": "TOKENIZED_EQUITIES_STRATEGY",
+    "event_type": "RWA_DEVELOPMENTS",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -186,7 +186,7 @@
   "source_published_at": "2026-01-29T00:00:00Z",
   "text": "Russia introduced new limits on crypto purchases for certain categories of buyers as part of tighter regulatory controls.",
   "expected": {
-    "event_type": "CRYPTO_REGULATION_RESTRICTION",
+    "event_type": "REGULATORY_ACTION_ENFORCEMENT",
     "jurisdiction": "RUSSIA",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "GLOBAL"
@@ -199,7 +199,7 @@
   "source_published_at": "2026-01-23T00:00:00Z",
   "text": "Crypto security company Ledger is preparing a potential $4 billion New York listing after a record year driven by increased demand for digital asset custody and security.",
   "expected": {
-    "event_type": "IPO_PLANNING",
+    "event_type": "CAPITAL_MARKETS_ACTIVITY",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -212,7 +212,7 @@
   "source_published_at": "2026-01-28T00:00:00Z",
   "text": "The White House is set to meet with banks and crypto companies as disagreements intensify over proposed digital asset legislation.",
   "expected": {
-    "event_type": "CRYPTO_POLICY_MEETING",
+    "event_type": "LEGISLATION_POLICY_DEVELOPMENT",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -225,7 +225,7 @@
   "source_published_at": "2026-01-27T00:00:00Z",
   "text": "Standard Chartered warned that U.S. banks could lose up to $500 billion in deposits to stablecoins by 2028 as adoption accelerates.",
   "expected": {
-    "event_type": "STABLECOIN_IMPACT_WARNING",
+    "event_type": "STABLECOINS_MONETARY_MECHANICS",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -238,7 +238,7 @@
   "source_published_at": "2026-01-26T00:00:00Z",
   "text": "Stablecoin issuer Tether disclosed it purchased 27 tons of gold in the fourth quarter as part of its reserve diversification strategy.",
   "expected": {
-    "event_type": "STABLECOIN_RESERVE_UPDATE",
+    "event_type": "STABLECOINS_MONETARY_MECHANICS",
     "jurisdiction": "GLOBAL",
     "v1_event_type": "STABLECOIN_ISSUANCE",
     "v1_jurisdiction": "GLOBAL"
@@ -251,7 +251,7 @@
   "source_published_at": "2026-01-22T00:00:00Z",
   "text": "Crypto custody firm BitGo saw its shares jump 246% in its NYSE debut, signaling strong public market demand for digital asset infrastructure companies.",
   "expected": {
-    "event_type": "IPO_MARKET_DEBUT",
+    "event_type": "CAPITAL_MARKETS_ACTIVITY",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"
@@ -264,7 +264,7 @@
   "source_published_at": "2025-08-15T00:00:00Z",
   "text": "Crypto exchange Gemini, founded by the Winklevoss twins, filed confidentially for an initial public offering in the United States.",
   "expected": {
-    "event_type": "IPO_FILING",
+    "event_type": "CAPITAL_MARKETS_ACTIVITY",
     "jurisdiction": "US",
     "v1_event_type": "UNKNOWN",
     "v1_jurisdiction": "US"

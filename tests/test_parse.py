@@ -48,7 +48,7 @@ def test_stablecoin_launch_maps_to_issuance() -> None:
     )
     resp = client.post("/parse", json={"text": text})
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "STABLECOIN_LAUNCH"
+    assert resp.json()["event_type"] == "NEW_PROTOCOL_PRODUCT_LAUNCHES"
     assert resp.json()["v1_event_type"] == "STABLECOIN_ISSUANCE"
 
 
@@ -60,7 +60,7 @@ def test_event_subtype_stablecoin_launch() -> None:
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "STABLECOIN_LAUNCH"
+    assert resp.json()["event_type"] == "NEW_PROTOCOL_PRODUCT_LAUNCHES"
     assert resp.json()["event_subtype"] == "stablecoin.launch.registered"
 
 
@@ -72,7 +72,7 @@ def test_event_subtype_enforcement_lawsuit() -> None:
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "CRYPTO_REGULATION_RESTRICTION"
+    assert resp.json()["event_type"] == "REGULATORY_ACTION_ENFORCEMENT"
     assert resp.json()["event_subtype"] == "regulation.enforcement.lawsuit"
 
 
@@ -84,7 +84,7 @@ def test_event_subtype_protocol_upgrade_hard_fork() -> None:
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "MISC_OTHER"
+    assert resp.json()["event_type"] == "PROTOCOL_UPGRADES_NETWORK_CHANGES"
     assert resp.json()["event_subtype"] == "protocol.upgrade.hard_fork"
 
 
@@ -96,8 +96,8 @@ def test_event_subtype_unknown_misc_crypto_related() -> None:
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "MISC_OTHER"
-    assert resp.json()["event_subtype"] == "misc"
+    assert resp.json()["event_type"] == "INTEROPERABILITY_INFRA_DEVELOPMENTS"
+    assert resp.json()["event_subtype"] == "infrastructure.wallet"
 
 
 def test_event_subtype_unknown_policy_bucket() -> None:
@@ -108,7 +108,7 @@ def test_event_subtype_unknown_policy_bucket() -> None:
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["event_type"] == "REGULATORY_GUIDANCE"
+    assert resp.json()["event_type"] == "LEGISLATION_POLICY_DEVELOPMENT"
     assert resp.json()["event_subtype"] == "regulation.policy"
 
 

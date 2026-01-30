@@ -215,12 +215,43 @@ async def parse(
 
     def infer_v1_event_type(text: str, event_type: EventType) -> EventTypeV1:
         t = text.lower()
-        if event_type in {EventType.STABLECOIN_LAUNCH, EventType.STABLECOIN_RESERVE_UPDATE}:
+        if (
+            event_type
+            in {
+                EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES,
+                EventType.STABLECOINS_MONETARY_MECHANICS,
+            }
+            and "stablecoin" in t
+        ):
             return EventTypeV1.STABLECOIN_ISSUANCE
-        if event_type == EventType.CRYPTO_REGULATION_RESTRICTION and any(
-            w in t for w in ["lawsuit", "sues", "sued", "charges", "charged", "indict", "investigation", "probe"]
+        if event_type == EventType.REGULATORY_ACTION_ENFORCEMENT and any(
+            w in t
+            for w in [
+                "lawsuit",
+                "sues",
+                "sued",
+                "charges",
+                "charged",
+                "indict",
+                "investigation",
+                "probe",
+            ]
         ) and any(r in t for r in ["sec", "cftc", "doj", "fca", "esma", "ofac"]):
             return EventTypeV1.ENFORCEMENT_ACTION
+        if event_type == EventType.PROTOCOL_UPGRADES_NETWORK_CHANGES:
+            return EventTypeV1.PROTOCOL_UPGRADE
+        if event_type == EventType.SECURITY_INCIDENTS_EXPLOITS and any(
+            w in t
+            for w in [
+                "exchange",
+                "cex",
+                "bybit",
+                "coinbase",
+                "binance",
+                "kraken",
+            ]
+        ):
+            return EventTypeV1.EXCHANGE_HACK
         if event_type in {EventType.UNKNOWN, EventType.MISC_OTHER}:
             return EventTypeV1.UNKNOWN
         return EventTypeV1.UNKNOWN
@@ -228,38 +259,32 @@ async def parse(
     # Topics are intentionally loose.
     topics: list[str] = []
     if primary.event_type in {
-        EventType.REGULATORY_GUIDANCE,
-        EventType.CRYPTO_REGULATION_RESTRICTION,
-        EventType.CRYPTO_POLICY_MEETING,
+        EventType.REGULATORY_ACTION_ENFORCEMENT,
+        EventType.LEGISLATION_POLICY_DEVELOPMENT,
+        EventType.GOVERNMENT_CENTRAL_BANK_INITIATIVES,
     }:
         topics = ["REGULATION"]
-    elif primary.event_type in {
-        EventType.STABLECOIN_LAUNCH,
-        EventType.STABLECOIN_IMPACT_WARNING,
-        EventType.STABLECOIN_RESERVE_UPDATE,
-    }:
+    elif primary.event_type == EventType.STABLECOINS_MONETARY_MECHANICS:
         topics = ["STABLECOIN"]
-    elif primary.event_type in {
-        EventType.TOKENIZED_ASSET_VOLUME_SURGE,
-        EventType.TOKENIZED_EQUITIES_STRATEGY,
-    }:
-        topics = ["TOKENIZATION"]
-    elif primary.event_type in {EventType.IPO_FILING, EventType.IPO_PLANNING, EventType.IPO_MARKET_DEBUT}:
+    elif primary.event_type == EventType.NEW_PROTOCOL_PRODUCT_LAUNCHES:
+        topics = ["LAUNCH"]
+    elif primary.event_type == EventType.CAPITAL_MARKETS_ACTIVITY:
         topics = ["CAPITAL_MARKETS"]
     elif primary.event_type in {
-        EventType.FUND_RAISE,
-        EventType.STRATEGIC_INVESTMENT,
-        EventType.CORPORATE_BITCOIN_PURCHASE,
+        EventType.FUNDING_INVESTMENT_MA,
+        EventType.INSTITUTIONAL_ADOPTION_STRATEGY,
     }:
         topics = ["INSTITUTIONS"]
-    elif primary.event_type in {EventType.CRYPTO_MARKET_VOLATILITY, EventType.MACRO_MARKET_SHOCK}:
-        topics = ["MARKETS"]
-    elif primary.event_type == EventType.CRYPTO_EXCHANGE_PRODUCT_EXPANSION:
-        topics = ["EXCHANGE"]
-    elif primary.event_type == EventType.CRYPTO_PAYMENTS_COMPANY_UPDATE:
+    elif primary.event_type == EventType.MARKET_STRUCTURE_LIQUIDITY_SHIFTS:
+        topics = ["MARKET_STRUCTURE"]
+    elif primary.event_type == EventType.SECURITY_INCIDENTS_EXPLOITS:
+        topics = ["SECURITY"]
+    elif primary.event_type == EventType.INTEROPERABILITY_INFRA_DEVELOPMENTS:
+        topics = ["INFRA"]
+    elif primary.event_type == EventType.RWA_DEVELOPMENTS:
+        topics = ["RWA"]
+    elif primary.event_type == EventType.PAYMENTS_COMMERCE_CONSUMER_ADOPTION:
         topics = ["PAYMENTS"]
-    elif primary.event_type == EventType.NETWORK_VALIDATOR_DECLINE:
-        topics = ["NETWORK"]
 
     return ParseResponse(
         event_type=primary.event_type,
