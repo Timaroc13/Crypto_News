@@ -194,6 +194,10 @@ class FeedbackRequest(BaseModel):
         default=None,
         description="Optional caller-provided id to correlate feedback when parse_id is not available",
     )
+    text: str | None = Field(
+        default=None,
+        description="Optional raw text (required for export when parse_id is not provided)",
+    )
     expected: dict[str, Any] = Field(
         default_factory=dict,
         description="Corrected fields (e.g., event_type, event_subtype, jurisdiction, assets, entities)",

@@ -365,6 +365,7 @@ async def feedback(
         fid = store_feedback(
             parse_id=req.parse_id,
             input_id=req.input_id,
+            text=req.text,
             expected=req.expected,
             notes=req.notes,
         )

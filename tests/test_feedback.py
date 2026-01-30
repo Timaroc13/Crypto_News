@@ -56,6 +56,25 @@ def test_feedback_with_parse_id_and_export(client: TestClient) -> None:
     assert obj["expected"]["event_type"] == "LEGISLATION_POLICY_DEVELOPMENT"
 
 
+def test_feedback_with_input_id_and_text_exports(client: TestClient) -> None:
+    fb_resp = client.post(
+        "/feedback",
+        json={
+            "input_id": "x-input-only",
+            "text": "Hong Kong unveils new licensing rules for crypto exchanges.",
+            "expected": {"event_type": "LEGISLATION_POLICY_DEVELOPMENT", "jurisdiction": "HK"},
+        },
+    )
+    assert fb_resp.status_code == 200
+
+    cases = export_feedback_cases()
+    assert len(cases) == 1
+    obj = cases[0]
+    assert obj["id"].startswith("feedback-")
+    assert "Hong Kong" in obj["text"]
+    assert obj["expected"]["jurisdiction"] == "HK"
+
+
 def test_feedback_disabled_returns_error(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv("ENABLE_PERSISTENCE", raising=False)
     monkeypatch.setenv("DB_PATH", str(tmp_path / "nope.sqlite3"))

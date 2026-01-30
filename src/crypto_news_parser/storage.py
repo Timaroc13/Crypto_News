@@ -115,19 +115,21 @@ def store_feedback(
     *,
     parse_id: int | None,
     input_id: str | None,
+    text: str | None,
     expected: dict[str, Any],
     notes: str | None,
 ) -> int:
     conn = _connect()
     try:
         init_db(conn)
-        text: str | None = None
+        stored_text: str | None = text
         parse_run_id: int | None = None
         if parse_id is not None:
-            text = _load_parse_text(conn, parse_id)
-            if text is None:
+            parse_text = _load_parse_text(conn, parse_id)
+            if parse_text is None:
                 raise ValueError("parse_id not found")
             parse_run_id = parse_id
+            stored_text = parse_text
 
         cur = conn.execute(
             """
@@ -138,7 +140,7 @@ def store_feedback(
                 int(time.time()),
                 parse_run_id,
                 input_id,
-                text,
+                stored_text,
                 json.dumps(expected, ensure_ascii=False),
                 notes,
             ),
