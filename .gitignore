@@ -6,3 +6,10 @@ __pycache__/
 .venv/
 .env
 .DS_Store
+
+# Local persistence artifacts
+*.sqlite3
+data.sqlite3
+
+# Temporary eval exports
+eval/_tmp_*.jsonl

@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -22,6 +22,8 @@ from .models import (
     ErrorObject,
     EventType,
     EventTypeV1,
+    FeedbackRequest,
+    FeedbackResponse,
     ParseRequest,
     ParseUrlRequest,
     ParseResponse,
@@ -36,6 +38,8 @@ from .parser import (
     resolve_jurisdiction_with_meta,
     select_primary_event,
 )
+
+from .storage import persistence_enabled, store_feedback, store_parse_run
 
 SCHEMA_VERSION = "v2"
 MODEL_VERSION = os.getenv("MODEL_VERSION", "news-parser-0.1")
@@ -199,6 +203,7 @@ def _require_api_key(authorization: str | None) -> None:
 async def parse(
     req: ParseRequest,
     authorization: str | None = Header(default=None),
+    response: Response = None,
 ) -> ParseResponse:
     _require_api_key(authorization)
 
@@ -298,7 +303,7 @@ async def parse(
     elif primary.event_type == EventType.PAYMENTS_COMMERCE_CONSUMER_ADOPTION:
         topics = ["PAYMENTS"]
 
-    return ParseResponse(
+    parsed = ParseResponse(
         event_type=primary.event_type,
         v1_event_type=infer_v1_event_type(req.text, primary.event_type),
         event_subtype=event_subtype,
@@ -315,11 +320,68 @@ async def parse(
         model_version=MODEL_VERSION,
     )
 
+    if persistence_enabled():
+        stored = store_parse_run(
+            input_id=req.input_id,
+            source_url=req.source_url,
+            source_name=req.source_name,
+            source_published_at=req.source_published_at,
+            text=req.text,
+            response=parsed.model_dump(),
+        )
+        if response is not None:
+            response.headers["X-Parse-Id"] = str(stored.parse_id)
+
+    return parsed
+
+
+@app.post("/feedback", response_model=FeedbackResponse)
+async def feedback(
+    req: FeedbackRequest,
+    authorization: str | None = Header(default=None),
+) -> FeedbackResponse:
+    _require_api_key(authorization)
+
+    if not persistence_enabled():
+        raise HTTPException(
+            status_code=400,
+            detail=_error_payload(
+                "PERSISTENCE_DISABLED",
+                "Feedback is unavailable because persistence is disabled.",
+            ),
+        )
+
+    if req.parse_id is None and not req.input_id:
+        raise HTTPException(
+            status_code=422,
+            detail=_error_payload(
+                "INVALID_REQUEST",
+                "Provide either parse_id or input_id.",
+                details={"fields": ["parse_id", "input_id"]},
+            ),
+        )
+
+    try:
+        fid = store_feedback(
+            parse_id=req.parse_id,
+            input_id=req.input_id,
+            expected=req.expected,
+            notes=req.notes,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=_error_payload("INVALID_REQUEST", str(e)),
+        )
+
+    return FeedbackResponse(feedback_id=fid)
+
 
 @app.post("/parse_url", response_model=ParseResponse)
 async def parse_url(
     req: ParseUrlRequest,
     authorization: str | None = Header(default=None),
+    response: Response = None,
 ) -> ParseResponse:
     _require_api_key(authorization)
 
@@ -355,8 +417,9 @@ async def parse_url(
     parse_req = ParseRequest(
         text=fetched.text,
         deterministic=req.deterministic,
+        input_id=req.input_id,
         source_url=fetched.url,
         source_name=req.source_name,
         source_published_at=req.source_published_at,
     )
-    return await parse(parse_req, authorization=authorization)
+    return await parse(parse_req, authorization=authorization, response=response)

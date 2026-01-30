@@ -108,6 +108,12 @@ class ParseRequest(BaseModel):
     text: str = Field(..., description="Crypto-related text to parse")
     deterministic: bool = Field(False, description="If true, output is reproducible")
 
+    # Optional caller-provided id to correlate parses and feedback.
+    input_id: str | None = Field(
+        None,
+        description="Optional caller-provided identifier for correlating parses and feedback",
+    )
+
     # Optional metadata (v1): accepted for traceability; MUST NOT trigger any fetching.
     source_url: str | None = Field(None, description="Optional source URL (not fetched)")
     source_name: str | None = Field(None, description="Optional source name/publisher")
@@ -149,6 +155,12 @@ class ParseUrlRequest(BaseModel):
     url: str = Field(..., description="Absolute http(s) URL to fetch and parse")
     deterministic: bool = Field(False, description="If true, output is reproducible given fetched content")
 
+    # Optional caller-provided id to correlate parses and feedback.
+    input_id: str | None = Field(
+        None,
+        description="Optional caller-provided identifier for correlating parses and feedback",
+    )
+
     # Optional metadata (traceability only).
     source_name: str | None = Field(None, description="Optional source name/publisher")
     source_published_at: str | None = Field(
@@ -171,6 +183,36 @@ class ParseUrlRequest(BaseModel):
         if len(value) > 2048:
             raise ValueError("url is too long")
         return value
+
+
+class FeedbackRequest(BaseModel):
+    parse_id: int | None = Field(
+        default=None,
+        description="Optional parse id returned in X-Parse-Id header when persistence is enabled",
+    )
+    input_id: str | None = Field(
+        default=None,
+        description="Optional caller-provided id to correlate feedback when parse_id is not available",
+    )
+    expected: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Corrected fields (e.g., event_type, event_subtype, jurisdiction, assets, entities)",
+    )
+    notes: str | None = Field(default=None, description="Optional free-form notes")
+
+    @field_validator("expected")
+    @classmethod
+    def validate_expected(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("expected must be an object")
+        return value
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: int
+    status: str = "stored"
 
 
 class ParseResponse(BaseModel):
