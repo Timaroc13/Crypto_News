@@ -13,6 +13,7 @@ The system SHALL provide an endpoint to accept user corrections.
 
 The system SHOULD expose `POST /feedback` that accepts:
 - a `parse_id` or caller-provided `input_id`
+- optional raw `text` (recommended when using `input_id` without `parse_id`, to enable export)
 - optional corrected fields (`event_type`, `event_subtype`, `jurisdiction`, `assets`, `entities`, etc.)
 - optional notes
 
@@ -20,6 +21,12 @@ The system SHOULD expose `POST /feedback` that accepts:
 - **WHEN** the client submits valid feedback
 - **THEN** the API returns HTTP 200
 - **AND** the system persists the feedback record
+
+#### Scenario: Submit feedback with input_id and inline text
+- **WHEN** the client submits feedback with `input_id` and `text` (without `parse_id`)
+- **THEN** the API returns HTTP 200
+- **AND** the system persists the feedback record
+- **AND** exports MAY include the feedback as an eval case
 
 ### Requirement: Export feedback as JSONL
 The system SHALL provide a way to export stored feedback into JSONL suitable for the existing eval harness.
