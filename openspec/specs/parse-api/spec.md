@@ -13,6 +13,21 @@ The system SHALL expose `POST /parse` which accepts user-provided text and retur
 - **THEN** the API returns HTTP 200
 - **AND** the response matches the v1 response schema
 - **AND** the response includes `schema_version` and `model_version`
+- **AND** the response includes `event_subtype` (nullable) for optional finer-grained labeling
+
+### Requirement: Event subtype
+The system SHALL support an optional `event_subtype` field in the v1 response.
+
+`event_subtype` is an implementation-defined string intended to provide finer-grained categorization while keeping `event_type` as the stable primary classification.
+
+#### Scenario: Subtype omitted when unknown
+- **WHEN** the system cannot confidently infer a subtype
+- **THEN** the response contains `event_subtype = null`
+
+#### Scenario: Catch-all subtype for crypto-related unknowns
+- **WHEN** the input is crypto-related but does not map to any canonical v1 `event_type`
+- **THEN** the response contains `event_type = "UNKNOWN"`
+- **AND** the response MAY set `event_subtype = "misc"`
 
 ### Requirement: Single primary event
 The system SHALL return exactly one `event_type` per request.

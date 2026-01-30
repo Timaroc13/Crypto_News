@@ -98,6 +98,10 @@ class ParseRequest(BaseModel):
 
 class ParseResponse(BaseModel):
     event_type: EventType
+    event_subtype: str | None = Field(
+        default=None,
+        description="Optional finer-grained label consistent with event_type (v1 extension)",
+    )
     topics: list[str]
     assets: list[str]
     entities: list[str]

@@ -19,6 +19,7 @@ from .parser import (
     CandidateEvent,
     extract_assets,
     extract_entities,
+    infer_event_subtype,
     infer_sentiment,
     resolve_jurisdiction,
     select_primary_event,
@@ -206,6 +207,8 @@ async def parse(
 
     primary, assets, entities = await _maybe_refine(req, primary, assets, entities)
 
+    event_subtype = infer_event_subtype(req.text, primary.event_type)
+
     # Topics are intentionally loose in v1.
     topics = []
     if primary.event_type.value.startswith("ETF_"):
@@ -215,6 +218,7 @@ async def parse(
 
     return ParseResponse(
         event_type=primary.event_type,
+        event_subtype=event_subtype,
         topics=topics,
         assets=assets,
         entities=entities,

@@ -303,6 +303,154 @@ def infer_sentiment(text: str) -> Sentiment:
     return Sentiment.neutral
 
 
+def infer_event_subtype(text: str, event_type: EventType) -> str | None:
+    """Best-effort optional subtype, consistent with the selected event_type.
+
+    This intentionally favors precision over recall.
+    """
+
+    t = text.lower()
+
+    if event_type == EventType.ENFORCEMENT_ACTION:
+        if any(w in t for w in ["lawsuit", "sues", "sued", "sue "]):
+            return "regulation.enforcement.lawsuit"
+        if any(w in t for w in ["fine", "penalty", "fined", "civil penalty"]):
+            return "regulation.enforcement.fine"
+        if any(w in t for w in ["settlement", "settled"]):
+            return "regulation.enforcement.settlement"
+        if any(w in t for w in ["cease and desist", "cease-and-desist", "c&d"]):
+            return "regulation.enforcement.cease_and_desist"
+        if any(w in t for w in ["indict", "indicted", "indictment", "charges", "charged"]):
+            return "regulation.enforcement.criminal_charges"
+        if any(w in t for w in ["investigation", "probe"]):
+            return "regulation.enforcement.investigation"
+        return None
+
+    if event_type == EventType.EXCHANGE_HACK:
+        if "breach" in t:
+            return "security.exchange_hack.breach"
+        if "exploit" in t:
+            return "security.exchange_hack.exploit"
+        return "security.exchange_hack.hack"
+
+    if event_type == EventType.STABLECOIN_DEPEG:
+        if "lost its peg" in t or "lost the peg" in t:
+            return "stablecoin.depeg.lost_peg"
+        return "stablecoin.depeg.depeg"
+
+    if event_type == EventType.STABLECOIN_ISSUANCE:
+        if any(w in t for w in ["launch", "launched", "launches", "introduced"]):
+            return "stablecoin.issuance.launch"
+        if any(w in t for w in ["mint", "minted", "issuance", "issued"]):
+            return "stablecoin.issuance.mint"
+        return None
+
+    if event_type in {
+        EventType.ETF_APPROVAL,
+        EventType.ETF_REJECTION,
+        EventType.ETF_FILING,
+        EventType.ETF_INFLOW,
+        EventType.ETF_OUTFLOW,
+    }:
+        # Keep this conservative: only emit subtype when asset is explicit.
+        if "bitcoin" in t or "btc" in t:
+            return "capital_markets.etf.bitcoin"
+        if "ethereum" in t or re.search(r"\beth\b", t):
+            return "capital_markets.etf.ethereum"
+        return None
+
+    if event_type == EventType.PROTOCOL_UPGRADE:
+        if "hard fork" in t:
+            return "protocol.upgrade.hard_fork"
+        if "mainnet" in t:
+            return "protocol.upgrade.mainnet"
+        if "upgrade" in t:
+            return "protocol.upgrade.upgrade"
+        return None
+
+    if event_type == EventType.MINER_SHUTDOWN:
+        if "halt" in t:
+            return "protocol.mining.halt"
+        return "protocol.mining.shutdown"
+
+    if event_type in {EventType.CEX_INFLOW, EventType.CEX_OUTFLOW}:
+        if "whale" in t:
+            return "market_structure.exchange_flows.whale"
+        return None
+
+    if event_type == EventType.UNKNOWN:
+        # Best-effort MECE-aligned subtype buckets for crypto-related text.
+        # Keep conservative and avoid guessing.
+        if any(w in t for w in ["bankruptcy", "chapter 11", "insolvency", "insolvent"]):
+            return "company.insolvency"
+        if any(w in t for w in ["halted withdrawals", "withdrawals halted", "paused withdrawals"]):
+            return "market_structure.exchange_ops.withdrawals_halted"
+        if any(w in t for w in ["list", "listed", "listing"]) and any(
+            w in t for w in ["exchange", "binance", "coinbase", "kraken", "bybit"]
+        ):
+            return "capital_markets.listing"
+        if any(w in t for w in ["delist", "delisted", "delisting"]):
+            return "capital_markets.delisting"
+        if any(
+            w in t
+            for w in [
+                "series a",
+                "series b",
+                "series c",
+                "funding round",
+                "raised",
+                "seed round",
+            ]
+        ):
+            return "institutions.funding"
+        if any(w in t for w in ["acquired", "acquisition", "merge", "merged", "merger"]):
+            return "institutions.ma"
+        if any(
+            w in t
+            for w in [
+                "bill",
+                "draft bill",
+                "consultation",
+                "guidance",
+                "framework",
+                "policy",
+                "executive order",
+            ]
+        ):
+            return "regulation.policy"
+        if any(
+            w in t
+            for w in [
+                "cbdc",
+                "central bank digital currency",
+                "tokenization pilot",
+                "treasury",
+            ]
+        ):
+            return "government.initiative"
+        if any(w in t for w in ["partnership", "integration", "integrated"]):
+            return "ecosystem.partnership"
+
+        crypto_cues = [
+            "crypto",
+            "blockchain",
+            "bitcoin",
+            "ethereum",
+            "stablecoin",
+            "token",
+            "defi",
+            "exchange",
+            "wallet",
+            "web3",
+        ]
+        if any(cue in t for cue in crypto_cues):
+            # Catch-all bucket for crypto news that doesn't fit current v1 event_type.
+            return "misc"
+        return None
+
+    return None
+
+
 def _candidates(text: str) -> list[CandidateEvent]:
     t = text.lower()
     candidates: list[CandidateEvent] = []

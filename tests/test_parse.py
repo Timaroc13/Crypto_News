@@ -14,6 +14,7 @@ def test_parse_returns_schema_fields() -> None:
     data = resp.json()
 
     assert "event_type" in data
+    assert "event_subtype" in data
     assert "schema_version" in data
     assert "model_version" in data
     assert 0.0 <= data["impact_score"] <= 1.0
@@ -47,6 +48,66 @@ def test_stablecoin_launch_maps_to_issuance() -> None:
     resp = client.post("/parse", json={"text": text})
     assert resp.status_code == 200
     assert resp.json()["event_type"] == "STABLECOIN_ISSUANCE"
+
+
+def test_event_subtype_stablecoin_launch() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "A new USD-backed stablecoin launched with central bank registration.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "STABLECOIN_ISSUANCE"
+    assert resp.json()["event_subtype"] == "stablecoin.issuance.launch"
+
+
+def test_event_subtype_enforcement_lawsuit() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "The SEC sued a major crypto exchange over alleged securities violations.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "ENFORCEMENT_ACTION"
+    assert resp.json()["event_subtype"] == "regulation.enforcement.lawsuit"
+
+
+def test_event_subtype_protocol_upgrade_hard_fork() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "Ethereum developers announced a hard fork upgrade scheduled for mainnet.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "PROTOCOL_UPGRADE"
+    assert resp.json()["event_subtype"] == "protocol.upgrade.hard_fork"
+
+
+def test_event_subtype_unknown_misc_crypto_related() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "A new crypto wallet added support for multi-chain transfers.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "UNKNOWN"
+    assert resp.json()["event_subtype"] == "misc"
+
+
+def test_event_subtype_unknown_policy_bucket() -> None:
+    resp = client.post(
+        "/parse",
+        json={
+            "text": "A draft bill proposes a new regulatory framework for crypto markets.",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["event_type"] == "UNKNOWN"
+    assert resp.json()["event_subtype"] == "regulation.policy"
 
 
 def test_jurisdiction_uae_maps_to_asia() -> None:
