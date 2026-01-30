@@ -49,12 +49,14 @@ def test_golden_cases_match_expected_minimums() -> None:
             continue
 
         # Strict mode: enforce exact expected matches.
-        # Prefer v1_* mappings when present, since API outputs v1 enums.
+        # API now outputs v2 event_type, and provides optional legacy mapping as v1_event_type.
         strict_expected = dict(expected)
-        if "v1_event_type" in strict_expected:
-            strict_expected["event_type"] = strict_expected.pop("v1_event_type")
         if "v1_jurisdiction" in strict_expected:
-            strict_expected["jurisdiction"] = strict_expected.pop("v1_jurisdiction")
+            # Prefer v1 mapping for current API jurisdiction enum.
+            v1j = strict_expected.pop("v1_jurisdiction")
+            # If a richer jurisdiction label is present too, ignore it for now.
+            strict_expected.pop("jurisdiction", None)
+            strict_expected["jurisdiction"] = v1j
 
         for key, value in strict_expected.items():
             assert data.get(key) == value, (

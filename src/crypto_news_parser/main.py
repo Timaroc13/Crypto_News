@@ -12,6 +12,8 @@ from .models import (
     MAX_TEXT_LENGTH,
     ErrorEnvelope,
     ErrorObject,
+    EventType,
+    EventTypeV1,
     ParseRequest,
     ParseResponse,
 )
@@ -25,7 +27,7 @@ from .parser import (
     select_primary_event,
 )
 
-SCHEMA_VERSION = "v1"
+SCHEMA_VERSION = "v2"
 MODEL_VERSION = os.getenv("MODEL_VERSION", "news-parser-0.1")
 REQUIRED_API_KEY = os.getenv("API_KEY")
 
@@ -51,7 +53,9 @@ async def _maybe_refine(
         return primary, assets, entities
 
     # Refine only when the heuristic result is low-confidence.
-    low_confidence = (primary.event_type.value == "UNKNOWN") or (primary.confidence < 0.65)
+    low_confidence = (
+        primary.event_type.value in {"UNKNOWN", "MISC_OTHER"}
+    ) or (primary.confidence < 0.65)
     if not low_confidence:
         return primary, assets, entities
 
@@ -209,15 +213,57 @@ async def parse(
 
     event_subtype = infer_event_subtype(req.text, primary.event_type)
 
-    # Topics are intentionally loose in v1.
-    topics = []
-    if primary.event_type.value.startswith("ETF_"):
-        topics = ["ETF", "REGULATION"]
-    elif primary.event_type.value in {"EXCHANGE_HACK", "ENFORCEMENT_ACTION"}:
-        topics = ["RISK"]
+    def infer_v1_event_type(text: str, event_type: EventType) -> EventTypeV1:
+        t = text.lower()
+        if event_type in {EventType.STABLECOIN_LAUNCH, EventType.STABLECOIN_RESERVE_UPDATE}:
+            return EventTypeV1.STABLECOIN_ISSUANCE
+        if event_type == EventType.CRYPTO_REGULATION_RESTRICTION and any(
+            w in t for w in ["lawsuit", "sues", "sued", "charges", "charged", "indict", "investigation", "probe"]
+        ) and any(r in t for r in ["sec", "cftc", "doj", "fca", "esma", "ofac"]):
+            return EventTypeV1.ENFORCEMENT_ACTION
+        if event_type in {EventType.UNKNOWN, EventType.MISC_OTHER}:
+            return EventTypeV1.UNKNOWN
+        return EventTypeV1.UNKNOWN
+
+    # Topics are intentionally loose.
+    topics: list[str] = []
+    if primary.event_type in {
+        EventType.REGULATORY_GUIDANCE,
+        EventType.CRYPTO_REGULATION_RESTRICTION,
+        EventType.CRYPTO_POLICY_MEETING,
+    }:
+        topics = ["REGULATION"]
+    elif primary.event_type in {
+        EventType.STABLECOIN_LAUNCH,
+        EventType.STABLECOIN_IMPACT_WARNING,
+        EventType.STABLECOIN_RESERVE_UPDATE,
+    }:
+        topics = ["STABLECOIN"]
+    elif primary.event_type in {
+        EventType.TOKENIZED_ASSET_VOLUME_SURGE,
+        EventType.TOKENIZED_EQUITIES_STRATEGY,
+    }:
+        topics = ["TOKENIZATION"]
+    elif primary.event_type in {EventType.IPO_FILING, EventType.IPO_PLANNING, EventType.IPO_MARKET_DEBUT}:
+        topics = ["CAPITAL_MARKETS"]
+    elif primary.event_type in {
+        EventType.FUND_RAISE,
+        EventType.STRATEGIC_INVESTMENT,
+        EventType.CORPORATE_BITCOIN_PURCHASE,
+    }:
+        topics = ["INSTITUTIONS"]
+    elif primary.event_type in {EventType.CRYPTO_MARKET_VOLATILITY, EventType.MACRO_MARKET_SHOCK}:
+        topics = ["MARKETS"]
+    elif primary.event_type == EventType.CRYPTO_EXCHANGE_PRODUCT_EXPANSION:
+        topics = ["EXCHANGE"]
+    elif primary.event_type == EventType.CRYPTO_PAYMENTS_COMPANY_UPDATE:
+        topics = ["PAYMENTS"]
+    elif primary.event_type == EventType.NETWORK_VALIDATOR_DECLINE:
+        topics = ["NETWORK"]
 
     return ParseResponse(
         event_type=primary.event_type,
+        v1_event_type=infer_v1_event_type(req.text, primary.event_type),
         event_subtype=event_subtype,
         topics=topics,
         assets=assets,

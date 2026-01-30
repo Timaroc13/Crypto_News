@@ -20,7 +20,7 @@ def test_llm_refinement_applies_on_low_confidence(monkeypatch) -> None:
         async def refine(self, request):
             self.last_prompt_version = request.prompt_version
             return LLMRefinement(
-                event_type=EventType.ETF_FILING,
+                event_type=EventType.REGULATORY_GUIDANCE,
                 assets=["BTC"],
                 entities=["BlackRock"],
             )
@@ -32,7 +32,7 @@ def test_llm_refinement_applies_on_low_confidence(monkeypatch) -> None:
     assert resp.status_code == 200
     data = resp.json()
 
-    assert data["event_type"] == "ETF_FILING"
+    assert data["event_type"] == "REGULATORY_GUIDANCE"
     assert "BTC" in data["assets"]
     assert "BlackRock" in data["entities"]
     assert provider.last_prompt_version == PROMPT_VERSION

@@ -1,7 +1,7 @@
-# Capability: Parse API (v1)
+# Capability: Parse API (v2)
 
 ## Purpose
-Provide a low-cost, stateless HTTP API that converts crypto-news text into a stable v1 structured event response.
+Provide a low-cost, stateless HTTP API that converts crypto-news text into a stable v2 structured event response.
 
 ## Requirements
 
@@ -11,12 +11,13 @@ The system SHALL expose `POST /parse` which accepts user-provided text and retur
 #### Scenario: Successful parse
 - **WHEN** the client submits a valid JSON body containing a non-empty `text` string
 - **THEN** the API returns HTTP 200
-- **AND** the response matches the v1 response schema
-- **AND** the response includes `schema_version` and `model_version`
+- **AND** the response matches the v2 response schema
+- **AND** the response includes `schema_version = "v2"` and `model_version`
 - **AND** the response includes `event_subtype` (nullable) for optional finer-grained labeling
+- **AND** the response includes `v1_event_type` (nullable) for optional legacy mapping
 
 ### Requirement: Event subtype
-The system SHALL support an optional `event_subtype` field in the v1 response.
+The system SHALL support an optional `event_subtype` field in the v2 response.
 
 `event_subtype` is an implementation-defined string intended to provide finer-grained categorization while keeping `event_type` as the stable primary classification.
 
@@ -25,8 +26,8 @@ The system SHALL support an optional `event_subtype` field in the v1 response.
 - **THEN** the response contains `event_subtype = null`
 
 #### Scenario: Catch-all subtype for crypto-related unknowns
-- **WHEN** the input is crypto-related but does not map to any canonical v1 `event_type`
-- **THEN** the response contains `event_type = "UNKNOWN"`
+- **WHEN** the input is crypto-related but does not map to any specific v2 `event_type`
+- **THEN** the response contains `event_type = "MISC_OTHER"`
 - **AND** the response MAY set `event_subtype = "misc"`
 
 ### Requirement: Single primary event
@@ -38,12 +39,18 @@ The system SHALL return exactly one `event_type` per request.
 - **AND** all other events are ignored
 
 ### Requirement: No-match behavior
-The system SHALL return `event_type = "UNKNOWN"` when the input does not map to any canonical v1 event type.
+The system SHALL return a schema-valid response even when the input does not map to a specific v2 `event_type`.
 
-#### Scenario: No match
-- **WHEN** the input text contains no clear v1 event
+#### Scenario: Non-crypto input
+- **WHEN** the input text is not crypto-related
 - **THEN** the API returns HTTP 200
 - **AND** the response contains `event_type = "UNKNOWN"`
+
+#### Scenario: Crypto-related but uncategorized
+- **WHEN** the input text is crypto-related
+- **AND** no specific v2 category can be inferred
+- **THEN** the API returns HTTP 200
+- **AND** the response contains `event_type = "MISC_OTHER"`
 
 ### Requirement: Input constraints
 The system SHALL enforce a maximum supported `text` size and reject oversized inputs.

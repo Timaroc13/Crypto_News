@@ -9,6 +9,49 @@ MAX_TEXT_LENGTH = 20_000
 
 
 class EventType(str, Enum):
+    # v2 primary taxonomy (MECE-ish) + explicit fallbacks.
+    UNKNOWN = "UNKNOWN"
+    MISC_OTHER = "MISC_OTHER"
+
+    # Regulation / policy
+    REGULATORY_GUIDANCE = "REGULATORY_GUIDANCE"
+    CRYPTO_REGULATION_RESTRICTION = "CRYPTO_REGULATION_RESTRICTION"
+    CRYPTO_POLICY_MEETING = "CRYPTO_POLICY_MEETING"
+
+    # Institutions / company actions
+    FUND_RAISE = "FUND_RAISE"
+    STRATEGIC_INVESTMENT = "STRATEGIC_INVESTMENT"
+    CORPORATE_BITCOIN_PURCHASE = "CORPORATE_BITCOIN_PURCHASE"
+
+    # Market conditions
+    CRYPTO_MARKET_VOLATILITY = "CRYPTO_MARKET_VOLATILITY"
+    MACRO_MARKET_SHOCK = "MACRO_MARKET_SHOCK"
+
+    # Networks / infrastructure
+    NETWORK_VALIDATOR_DECLINE = "NETWORK_VALIDATOR_DECLINE"
+
+    # Stablecoins
+    STABLECOIN_LAUNCH = "STABLECOIN_LAUNCH"
+    STABLECOIN_IMPACT_WARNING = "STABLECOIN_IMPACT_WARNING"
+    STABLECOIN_RESERVE_UPDATE = "STABLECOIN_RESERVE_UPDATE"
+
+    # Exchanges / payments
+    CRYPTO_EXCHANGE_PRODUCT_EXPANSION = "CRYPTO_EXCHANGE_PRODUCT_EXPANSION"
+    CRYPTO_PAYMENTS_COMPANY_UPDATE = "CRYPTO_PAYMENTS_COMPANY_UPDATE"
+
+    # Tokenization
+    TOKENIZED_ASSET_VOLUME_SURGE = "TOKENIZED_ASSET_VOLUME_SURGE"
+    TOKENIZED_EQUITIES_STRATEGY = "TOKENIZED_EQUITIES_STRATEGY"
+
+    # Capital markets
+    IPO_FILING = "IPO_FILING"
+    IPO_PLANNING = "IPO_PLANNING"
+    IPO_MARKET_DEBUT = "IPO_MARKET_DEBUT"
+
+
+class EventTypeV1(str, Enum):
+    """Legacy v1 taxonomy (kept for best-effort mapping)."""
+
     UNKNOWN = "UNKNOWN"
 
     ETF_APPROVAL = "ETF_APPROVAL"
@@ -98,9 +141,13 @@ class ParseRequest(BaseModel):
 
 class ParseResponse(BaseModel):
     event_type: EventType
+    v1_event_type: EventTypeV1 | None = Field(
+        default=None,
+        description="Optional best-effort mapping to the legacy v1 event_type taxonomy",
+    )
     event_subtype: str | None = Field(
         default=None,
-        description="Optional finer-grained label consistent with event_type (v1 extension)",
+        description="Optional finer-grained label consistent with event_type",
     )
     topics: list[str]
     assets: list[str]

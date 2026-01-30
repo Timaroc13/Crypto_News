@@ -23,10 +23,13 @@ pytest
 
 - `POST /parse`
   - Body: `{ "text": "...", "deterministic": false, "source_url": "https://..." }` (source URL is accepted as metadata only; it is not fetched)
-  - Returns a schema-valid response; returns `event_type="UNKNOWN"` when no v1 event matches.
-  - Response may include `event_subtype` (optional, implementation-defined, consistent with `event_type`).
-    - Examples: `stablecoin.issuance.launch`, `regulation.enforcement.lawsuit`, `protocol.upgrade.hard_fork`
-    - For crypto-related inputs that don't map to a v1 `event_type`, the service may return `event_type="UNKNOWN"` with `event_subtype="misc"`.
+  - Returns a schema-valid response (v2 taxonomy).
+    - Uses `event_type="UNKNOWN"` for non-crypto or unclassifiable inputs.
+    - Uses `event_type="MISC_OTHER"` for crypto-related inputs that don't map to a specific v2 category.
+  - Response may include:
+    - `event_subtype` (optional, implementation-defined, consistent with `event_type`).
+      - Examples: `stablecoin.launch.registered`, `regulation.enforcement.lawsuit`, `protocol.upgrade.hard_fork`
+    - `v1_event_type` (optional legacy mapping) for migration/debugging.
 
 ## Environment
 
