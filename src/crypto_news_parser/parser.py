@@ -370,9 +370,47 @@ def resolve_jurisdiction_with_meta(text: str) -> tuple[Jurisdiction, str, float]
 
 def infer_sentiment(text: str) -> Sentiment:
     t = text.lower()
-    if any(k in t for k in ["hack", "exploit", "lawsuit", "charges", "indict", "ban", "depeg"]):
+    negative_cues = [
+        "hack",
+        "exploit",
+        "lawsuit",
+        "charges",
+        "indict",
+        "ban",
+        "depeg",
+        # Market-negative language
+        "sell-off",
+        "selloff",
+        "crash",
+        "plunge",
+        "plunged",
+        "dump",
+        "slump",
+        "slumped",
+        "meltdown",
+        "risk sell-off",
+        "down ",
+        "fell",
+        "falling",
+    ]
+    positive_cues = [
+        "approval",
+        "approved",
+        "inflows",
+        "record",
+        "surge",
+        "rally",
+        "partnership",
+    ]
+
+    has_negative = any(k in t for k in negative_cues)
+    has_positive = any(k in t for k in positive_cues)
+
+    if has_negative and has_positive:
+        return Sentiment.neutral
+    if has_negative:
         return Sentiment.negative
-    if any(k in t for k in ["approval", "approved", "inflows", "record", "surge", "partnership"]):
+    if has_positive:
         return Sentiment.positive
     return Sentiment.neutral
 

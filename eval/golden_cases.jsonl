@@ -115,6 +115,24 @@
   }
 }
 {
+  "id": "example-precious-metals-crash-btc-holds-2026-01-31",
+  "source_url": "https://www.coindesk.com/markets/2026/01/30/precious-metals-crash-with-silver-plunging-32-gold-11-bitcoin-slips-back-to-usd82-000",
+  "source_name": "CoinDesk",
+  "source_published_at": "2026-01-31T02:50:00Z",
+  "text": "Gold and silver plunged sharply from record highs on Friday, with silver down more than 30% and gold down more than 10%. Bitcoin was attempting to hold steady around $83,000 after volatile trading all week. The move was linked to a broader risk sell-off, with U.S. stocks lower, and commentary suggested risk capital may rotate back toward crypto after commodities fell.",
+  "expected": {
+    "event_type": "MARKET_STRUCTURE_LIQUIDITY_SHIFTS",
+    "event_subtype": "markets.volatility",
+    "jurisdiction": "US",
+    "assets": [
+      "BTC"
+    ],
+    "sentiment": "negative",
+    "v1_event_type": "UNKNOWN",
+    "v1_jurisdiction": "US"
+  }
+}
+{
   "id": "example-9",
   "source_url": "https://www.bbc.co.uk/news/articles/cx2yv31482vo",
   "source_name": "BBC News",

@@ -42,6 +42,56 @@ _MAX_REDIRECTS: Final[int] = 3
 _MAX_BYTES: Final[int] = 2 * 1024 * 1024  # 2 MiB
 
 
+_NOISE_LINE_PATTERNS: Final[list[re.Pattern[str]]] = [
+    # Common publisher boilerplate / UI chrome
+    re.compile(r"(?i)\b(read more|advertisement|sponsored|subscribe|newsletter|sign up|terms\b|privacy policy|cookie)\b"),
+    re.compile(r"(?i)\b(story continues below|enter your email|by signing up|make us preferred)\b"),
+    re.compile(r"(?i)\b(twitter|linkedin|facebook|email)\b"),
+    re.compile(r"(?i)\b(ui roboto|helvetica|arial|emoji|seg[o0]e)\b"),
+    re.compile(r"(?i)\b(search news|video prices|research consensus|data indices)\b"),
+    re.compile(r"(?i)\b(market wrap|breaking news)\b"),
+    # Image credits and similar
+    re.compile(r"(?i)\b(unsplash|shutterstock|getty images|photo|modified by)\b"),
+]
+
+
+def _looks_like_ticker_menu(line: str) -> bool:
+    # Drop lines that are mostly an uppercase ticker list (common in site headers/sidebars).
+    if re.fullmatch(r"(?:\$?[A-Z]{2,6})(?:\s+(?:\$?[A-Z]{2,6})){4,}", line.strip()):
+        return True
+    return False
+
+
+def _cleanup_extracted_text(text: str) -> str:
+    # Remove common boilerplate lines and excessive duplication.
+    lines_in = [ln.strip() for ln in text.splitlines()]
+    lines_out: list[str] = []
+    seen: set[str] = set()
+
+    for ln in lines_in:
+        if not ln:
+            continue
+        # Filter extremely long lines (often minified CSS/JS or font stacks that slipped through).
+        if len(ln) > 400:
+            continue
+        low = ln.lower()
+        if low in seen:
+            continue
+        if _looks_like_ticker_menu(ln):
+            continue
+        if any(p.search(ln) for p in _NOISE_LINE_PATTERNS):
+            continue
+        # Drop lines that look like nav breadcrumbs / section labels.
+        if re.fullmatch(r"(?i)(markets|policy|business|tech|prices|research|consensus|data|indices)", ln):
+            continue
+
+        lines_out.append(ln)
+        seen.add(low)
+
+    cleaned = "\n".join(lines_out).strip()
+    return cleaned[:20000]
+
+
 def _is_ip_blocked(ip: ipaddress._BaseAddress) -> bool:
     return (
         ip.is_private
@@ -110,7 +160,7 @@ def _html_to_text(html_bytes: bytes, encoding: str | None) -> str:
     lines = [ln for ln in lines if ln]
     text = "\n".join(lines)
     # Avoid pathological lengths.
-    return text[:20000]
+    return _cleanup_extracted_text(text)
 
 
 async def fetch_url_text(url: str) -> FetchResult:
