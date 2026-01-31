@@ -78,3 +78,15 @@ def test_parse_url_unsupported_content_type(monkeypatch, client: TestClient) -> 
     resp = client.post("/parse_url", json={"url": "https://example.com/doc.pdf"})
     assert resp.status_code == 415
     assert resp.json()["error"]["code"] == "UNSUPPORTED_FETCH_CONTENT_TYPE"
+
+
+def test_parse_url_empty_extracted_text_returns_422(monkeypatch, client: TestClient) -> None:
+    async def fake_fetch(url: str) -> FetchResult:
+        return FetchResult(url=url, content_type="text/html", text="")
+
+    monkeypatch.setattr(main_mod, "fetch_url_text", fake_fetch)
+
+    resp = client.post("/parse_url", json={"url": "https://example.com/empty"})
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["error"]["code"] == "INVALID_REQUEST"

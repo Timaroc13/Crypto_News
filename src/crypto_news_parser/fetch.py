@@ -89,6 +89,9 @@ def _cleanup_extracted_text(text: str) -> str:
         seen.add(low)
 
     cleaned = "\n".join(lines_out).strip()
+    # If filtering is too aggressive (site-specific layouts), fall back to the raw extracted text.
+    if not cleaned or len(cleaned) < 200:
+        return text[:20000]
     return cleaned[:20000]
 
 

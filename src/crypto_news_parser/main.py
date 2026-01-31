@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from .llm_adapter import RefinementRequest, get_provider_from_env, stable_seed
 from .fetch import (
@@ -425,12 +426,29 @@ async def parse_url(
         )
 
     # Reuse the main parse pipeline using extracted text.
-    parse_req = ParseRequest(
-        text=fetched.text,
-        deterministic=req.deterministic,
-        input_id=req.input_id,
-        source_url=fetched.url,
-        source_name=req.source_name,
-        source_published_at=req.source_published_at,
-    )
+    try:
+        parse_req = ParseRequest(
+            text=fetched.text,
+            deterministic=req.deterministic,
+            input_id=req.input_id,
+            source_url=fetched.url,
+            source_name=req.source_name,
+            source_published_at=req.source_published_at,
+        )
+    except ValidationError as e:
+        errors = e.errors()
+        for err in errors:
+            ctx = err.get("ctx")
+            if isinstance(ctx, dict) and isinstance(ctx.get("error"), Exception):
+                ctx["error"] = str(ctx["error"])
+            if isinstance(err.get("input"), (bytes, bytearray)):
+                err["input"] = (err["input"][:200]).decode("utf-8", errors="replace")
+        raise HTTPException(
+            status_code=422,
+            detail=_error_payload(
+                "INVALID_REQUEST",
+                "Fetched content could not be converted into a valid parse request.",
+                details={"url": req.url, "errors": errors},
+            ),
+        )
     return await parse(parse_req, authorization=authorization, response=response)
