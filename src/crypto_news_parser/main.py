@@ -48,6 +48,16 @@ REQUIRED_API_KEY = os.getenv("API_KEY")
 app = FastAPI(title="Crypto News Parser", version=SCHEMA_VERSION)
 
 
+@app.get("/")
+async def root() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "schema_version": SCHEMA_VERSION,
+        "model_version": MODEL_VERSION,
+        "docs": "/docs",
+    }
+
+
 def get_llm_provider():
     # Separated for test monkeypatching.
     return get_provider_from_env()
