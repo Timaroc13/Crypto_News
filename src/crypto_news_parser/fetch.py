@@ -90,7 +90,7 @@ def _cleanup_extracted_text(text: str) -> str:
 
     cleaned = "\n".join(lines_out).strip()
     # If filtering is too aggressive (site-specific layouts), fall back to the raw extracted text.
-    if not cleaned or len(cleaned) < 200:
+    if not cleaned:
         return text[:20000]
     return cleaned[:20000]
 
@@ -152,6 +152,12 @@ def _html_to_text(html_bytes: bytes, encoding: str | None) -> str:
     raw = re.sub(r"(?is)<(script|style)\\b.*?>.*?</\\1>", " ", raw)
     # Remove HTML comments.
     raw = re.sub(r"(?is)<!--.*?-->", " ", raw)
+
+    # Prefer the main article content if present to avoid nav/footer boilerplate.
+    m = re.search(r"(?is)<article\\b[^>]*>(.*?)</article>", raw)
+    if m is not None:
+        raw = m.group(1)
+
     # Turn common block separators into newlines.
     raw = re.sub(r"(?i)<\\s*br\\s*/?>", "\n", raw)
     raw = re.sub(r"(?i)</\\s*(p|div|li|h[1-6]|article|section)\\s*>", "\n", raw)

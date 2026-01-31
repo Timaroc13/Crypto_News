@@ -427,7 +427,7 @@ def infer_event_subtype(text: str, event_type: EventType) -> str | None:
         # Use word boundaries to avoid false positives (e.g., "issued" contains "sued").
         if re.search(r"\b(lawsuit|sue|sues|sued)\b", t):
             return "regulation.enforcement.lawsuit"
-        if any(w in t for w in ["fine", "penalty", "fined", "civil penalty"]):
+        if re.search(r"\b(fine|fined|penalty|penalties|civil\s+penalty)\b", t):
             return "regulation.enforcement.fine"
         if any(w in t for w in ["settlement", "settled"]):
             return "regulation.enforcement.settlement"
@@ -663,7 +663,7 @@ def _candidates(text: str) -> list[CandidateEvent]:
             )
         )
 
-    regulators = ["sec", "cftc", "doj", "finra", "fca", "esma", "ofac", "regulator"]
+    regulator_re = re.compile(r"\b(sec|cftc|doj|finra|fca|esma|ofac|regulator)\b")
 
     # Security incidents & exploits
     if any(w in t for w in ["hack", "exploit", "breach", "bug", "drained", "compromised"]):
@@ -687,7 +687,12 @@ def _candidates(text: str) -> list[CandidateEvent]:
         "cease-and-desist",
         "c&d",
     ]
-    if any(w in t for w in enforcement_words) and any(r in t for r in regulators):
+    enforcement_re = re.compile(
+        r"\b(lawsuit|sues|sued|charges|charged|indict|indicted|fine|fined|penalty|penalties|settlement|investigation|probe|c&d)\b"
+        r"|\bcease\s+and\s+desist\b|\bcease-and-desist\b"
+    )
+
+    if enforcement_re.search(t) and regulator_re.search(t):
         add(EventType.REGULATORY_ACTION_ENFORCEMENT, confidence=0.72, impact_score=0.85)
 
     # Legislation & policy development
@@ -712,9 +717,7 @@ def _candidates(text: str) -> list[CandidateEvent]:
         and re.search(r"\b(treasury\s+bill(s)?|t-?bill(s)?|tbill(s)?)\b", t) is None
     )
 
-    if has_legislation_language and (
-        _is_crypto_related(text) or any(r in t for r in regulators)
-    ):
+    if has_legislation_language and (_is_crypto_related(text) or regulator_re.search(t)):
         add(EventType.LEGISLATION_POLICY_DEVELOPMENT, confidence=0.66, impact_score=0.65)
 
     # Government & central bank initiatives
