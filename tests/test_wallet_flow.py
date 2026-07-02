@@ -59,16 +59,17 @@ def _detect(positions, volume_1wk=0.0, volume_1mo=0.0, **kwargs):
 
 
 def test_directional_new_wallet_flow_scores_high():
-    # 12 new wallets, $25k on YES; 1 new wallet $500 on NO; 65% burst.
+    # 12 new wallets, $25k on YES (50% of $50k liquidity); 1 new wallet $500 on NO; 65% burst.
     positions = [_new_wallet_position(f"0xyes{i}", "YES", 25_000 / 12) for i in range(12)]
     positions.append(_new_wallet_position("0xno1", "NO", 500))
 
     r = _detect(positions, volume_1wk=65_000, volume_1mo=100_000)
 
     assert r["dominant_side"] == "YES"
-    # count(12): +20, capital($25k): +30, burst(0.65): +20, dominance(12/13): +10
-    assert r["signal_score"] == 80
+    # count(12): +20, capital(50% of liquidity): +40, burst(0.65): +20, dominance(12/13): +10
+    assert r["signal_score"] == 90
     assert r["risk_tier"] == "HIGH"
+    assert r["dominant_side_liquidity_pct"] == 0.5
     assert r["new_wallet_count_yes"] == 12
     assert r["new_wallet_count_no"] == 1
 
@@ -83,13 +84,13 @@ def test_no_new_wallet_activity_is_low_with_null_dominant_side():
 
 
 def test_hedged_bilateral_flow_gets_no_dominance_points():
-    # 5 new wallets each side, equal capital below the $5k tier.
+    # 5 new wallets each side, equal capital ($2k = 4% of $50k liquidity).
     positions = [_new_wallet_position(f"0xy{i}", "YES", 400) for i in range(5)]
     positions += [_new_wallet_position(f"0xn{i}", "NO", 400) for i in range(5)]
 
     r = _detect(positions)
-    # dom_count=5 → +10; capital $2k → 0; burst 0 → 0; count_pct 0.5 → 0
-    assert r["signal_score"] == 10
+    # dom_count=5 → +10; capital 4% → +15; burst 0 → 0; count_pct 0.5 → 0
+    assert r["signal_score"] == 25
     assert r["dominant_side_count_pct"] == 0.5
 
 
@@ -104,23 +105,48 @@ def test_burst_tiers():
 
 
 def test_tier_cutoffs():
-    # 3 wallets, $6k dominant, 100% dominance, no burst → 10+15+10+5+... compute:
-    # count(3): +10, capital(6k): +15, dominance(1.0): +10 → 35 = LOW
-    positions = [_new_wallet_position(f"0x{i}", "YES", 2_000) for i in range(3)]
+    # 1 wallet, $500 (1% of liquidity), 100% dominance → 0+0+10 = 10 = LOW
+    positions = [_new_wallet_position("0xsolo", "YES", 500)]
     r = _detect(positions)
-    assert r["signal_score"] == 35
+    assert r["signal_score"] == 10
     assert r["risk_tier"] == "LOW"
 
-    # Add burst 0.35 (+10) → 45 = MEDIUM
-    r = _detect(positions, volume_1wk=35, volume_1mo=100)
-    assert r["signal_score"] == 45
+    # 3 wallets, $6k (12% of $50k), 100% dominance, no burst:
+    # count(3) +10, capital(12%) +30, dominance +10 → 50 = MEDIUM
+    positions = [_new_wallet_position(f"0x{i}", "YES", 2_000) for i in range(3)]
+    r = _detect(positions)
+    assert r["signal_score"] == 50
     assert r["risk_tier"] == "MEDIUM"
 
-    # 10 wallets, $25k, burst 0.65 → 20+30+20+10 = 80 = HIGH
+    # 10 wallets, $25k (50%), burst 0.65 → 20+40+20+10 = 90 = HIGH
     positions = [_new_wallet_position(f"0x{i}", "YES", 2_500) for i in range(10)]
     r = _detect(positions, volume_1wk=65, volume_1mo=100)
-    assert r["signal_score"] == 80
+    assert r["signal_score"] == 90
     assert r["risk_tier"] == "HIGH"
+
+
+def test_capital_relative_to_market_size():
+    # Spec scenario: 3 wallets, $4k on YES.
+    positions = [_new_wallet_position(f"0x{i}", "YES", 4_000 / 3) for i in range(3)]
+
+    # $30k liquidity → 13.3% → count +10, capital +30, dominance +10 = 50 MEDIUM
+    r = detect("c", "Q?", 3, 30_000.0, positions, total_volume=100_000.0, now_ts=NOW)
+    assert r["signal_score"] == 50
+    assert r["risk_tier"] == "MEDIUM"
+
+    # Same dollars in a $1M book → 0.4% → no capital points → 20 LOW
+    r = detect("c", "Q?", 3, 1_000_000.0, positions, total_volume=100_000.0, now_ts=NOW)
+    assert r["signal_score"] == 20
+    assert r["risk_tier"] == "LOW"
+
+
+def test_capital_falls_back_to_volume_without_liquidity():
+    # Liquidity 0, volume $50k, $6k dominant (12%) → capital +30
+    positions = [_new_wallet_position(f"0x{i}", "YES", 2_000) for i in range(3)]
+    r = detect("c", "Q?", 3, 0.0, positions, total_volume=50_000.0, now_ts=NOW)
+    # count +10, capital +30, dominance +10
+    assert r["signal_score"] == 50
+    assert r["dominant_side_liquidity_pct"] == 0.12
 
 
 def test_old_or_multimarket_wallets_are_not_new():

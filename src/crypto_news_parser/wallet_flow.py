@@ -74,6 +74,20 @@ _CAT_PATTERNS = [
 CATEGORIES = ("crypto", "sports", "macro", "politics", "geopolitics",
               "tech", "entertainment", "other")
 
+# Crypto subtype: price-threshold markets (no insider info possible) vs event
+# markets (sales, airdrops, listings, hacks — where the insider thesis lives).
+_PRICE_PAT = re.compile(
+    r"(dip to|reach|above|below|hit) \$|price of .+ (be|on)", re.I
+)
+
+# Coin-flip momentum markets with zero information content — excluded at fetch.
+_NOISE_PAT = re.compile(r"\bup or down\b", re.I)
+
+
+def crypto_subtype(question: str) -> str:
+    """`crypto-price` for price-threshold questions, `crypto-event` otherwise."""
+    return "crypto-price" if _PRICE_PAT.search(question or "") else "crypto-event"
+
 
 def classify_category(question: str, tags: list | None = None) -> str:
     """Classify a market into one fixed category from its tags + question text."""
@@ -226,6 +240,8 @@ def fetch_top_markets(
     now = datetime.now(UTC)
     filtered: list[dict] = []
     for m in pool:
+        if _NOISE_PAT.search(m.get("question") or ""):
+            continue
         end_date_str = m.get("endDate") or m.get("end_date")
         if not end_date_str:
             continue
@@ -482,6 +498,12 @@ def detect(
     # Recent activity burst: fraction of monthly volume in the last week.
     recent_burst_pct = (volume_1wk / volume_1mo) if volume_1mo > 0 else 0.0
 
+    # Capital relative to market size: $5k is a siren in a $30k crypto book
+    # and noise in a $5M sports book. Absolute tiers scored every crypto
+    # market LOW (observed noise floor: median 0.44% of liquidity, p90 4.4%).
+    capital_denom = total_liquidity if total_liquidity > 0 else total_volume
+    dom_liquidity_pct = (dom_usdc / capital_denom) if capital_denom > 0 else 0.0
+
     # Step 3: score — measured against the DOMINANT side only.
     # (Informed traders are directional; bilateral activity is likely
     # arbitrage/noise. Scoring the dominant side filters hedged patterns.)
@@ -493,11 +515,11 @@ def detect(
             score += 10
         if dom_count >= 20:
             score += 10
-        if dom_usdc >= 5_000:
+        if dom_liquidity_pct >= 0.03:
             score += 15
-        if dom_usdc >= 20_000:
+        if dom_liquidity_pct >= 0.10:
             score += 15
-        if dom_usdc >= 100_000:
+        if dom_liquidity_pct >= 0.25:
             score += 10
         if recent_burst_pct >= 0.30:
             score += 10
@@ -543,6 +565,7 @@ def detect(
         "dominant_side_usdc": round(dom_usdc, 2),
         "dominant_side_count": dom_count,
         "dominant_side_count_pct": round(dom_count_pct, 4),
+        "dominant_side_liquidity_pct": round(dom_liquidity_pct, 4),
         "new_wallet_count_yes": count_yes,
         "new_wallet_count_no": count_no,
         "new_wallet_usdc_yes": round(yes_u, 2),
@@ -613,9 +636,10 @@ def analyze_market(
         p_market_at_scan=extract_yes_price(market),
     )
     # Category: trust the tag we fetched under; else classify from text.
-    result["category"] = market.get("_category") or classify_category(
-        question, market.get("tags")
-    )
+    category = market.get("_category") or classify_category(question, market.get("tags"))
+    if category == "crypto":
+        category = crypto_subtype(question)
+    result["category"] = category
     return result
 
 

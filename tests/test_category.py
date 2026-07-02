@@ -80,16 +80,40 @@ def test_fetch_top_markets_filters_to_allowlist(monkeypatch):
     assert out[0]["_category"] == "crypto"
 
 
-def test_analyze_market_tags_category(monkeypatch):
+def test_analyze_market_tags_crypto_subtype(monkeypatch):
     monkeypatch.setattr(wf, "fetch_trades_for_market", lambda cid: [])
-    m = _market("c1", "Will Ethereum dip to $1500?", cat="crypto")
-    m["_days_to_resolution"] = 10
-    m["_liquidity_usdc"] = 50_000
-    m["_volume_usdc"] = 100_000
-    m["_volume_1wk_usdc"] = 0
-    m["_volume_1mo_usdc"] = 0
-    r = wf.analyze_market(m, {})
-    assert r["category"] == "crypto"
+
+    def analyzed(question):
+        m = _market("c1", question, cat="crypto")
+        m["_days_to_resolution"] = 10
+        m["_liquidity_usdc"] = 50_000
+        m["_volume_usdc"] = 100_000
+        m["_volume_1wk_usdc"] = 0
+        m["_volume_1mo_usdc"] = 0
+        return wf.analyze_market(m, {})
+
+    assert analyzed("Will Ethereum dip to $1,500 in June?")["category"] == "crypto-price"
+    laso = "Over $25M committed to the Laso Finance public sale?"
+    assert analyzed(laso)["category"] == "crypto-event"
+
+
+def test_crypto_subtype_classification():
+    assert wf.crypto_subtype("Will Bitcoin reach $62,500 in June?") == "crypto-price"
+    q = "Will the price of Bitcoin be above $64,000 on July 1?"
+    assert wf.crypto_subtype(q) == "crypto-price"
+    assert wf.crypto_subtype("XRP all time high by June 30, 2026?") == "crypto-event"
+    assert wf.crypto_subtype("Will MegaETH perform an airdrop by June 30?") == "crypto-event"
+
+
+def test_up_or_down_markets_excluded(monkeypatch):
+    pool = [
+        _market("c1", "Will Bitcoin hit $80k?", cat="crypto"),
+        _market("c2", "Bitcoin Up or Down - July 1, 9AM ET", cat="crypto"),
+        _market("c3", "Ethereum Up or Down on July 2?", cat="crypto"),
+    ]
+    monkeypatch.setattr(wf, "_fetch_category_pool", lambda category: pool)
+    out = wf.fetch_top_markets(top_n=20, categories=["crypto"])
+    assert [m["conditionId"] for m in out] == ["c1"]
 
 
 # ---------------------------------------------------------------------------

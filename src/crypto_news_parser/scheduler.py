@@ -85,7 +85,7 @@ def format_alert(r: dict[str, Any]) -> str:
     p = r.get("p_market_at_scan")
     implied = f"{p * 100:.0f}%" if p is not None else "?"
     return (
-        f"⚠️ {r['risk_tier']} informed-flow signal\n"
+        f"⚠️ {r['risk_tier']} informed-flow signal ({r.get('category', '?')})\n"
         f"{r['market_question']}\n"
         f"side: {r['dominant_side']} | score: {r['signal_score']}\n"
         f"new wallets: {r['dominant_side_count']} (${r['dominant_side_usdc']:,.0f})\n"

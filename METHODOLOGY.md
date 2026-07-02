@@ -185,6 +185,21 @@ starved them to 6-in-669). They also resolve slower than sports, so `SCAN_MAX_DA
 to 30. Every scan is still tagged with its category, so the dashboard's **By category** panel
 compares them directly — add `tech` to `SCAN_CATEGORIES` later and it segments automatically.
 
+**Crypto subtypes** (July 2026): the first crypto-only days showed 87% of scanned markets are
+price-threshold questions ("Will BTC dip to $X") where no insider information can exist; the
+thesis lives in **event markets** (token sales, airdrops, listings, ATHs — e.g. "Over $25M
+committed to the Laso Finance public sale?"). Scans are therefore stored as `crypto-price` vs
+`crypto-event` so the breakdown shows *where* any edge lives. "Up or Down" coin-flip markets
+are excluded at fetch entirely.
+
+**Liquidity-relative scoring** (July 2026, calibration reset #2): the original capital tiers
+($5k/$20k/$100k) were implicitly sized for huge sports books and scored 180/180 crypto scans
+LOW — HIGH-tier n could never accumulate. Capital points now come from dominant-side
+new-wallet USDC **as a fraction of market liquidity** (fallback: volume): ≥3% +15, ≥10% +15,
+≥25% +10. Observed noise floor on real crypto markets: median 0.44% of liquidity, p90 ≈ 4.4%.
+Per the §3 no-peeking rule, this scoring change reset the calibration counter (only 8
+qualifying trades were discarded — archived like everything else).
+
 **Clean slate**: the sports-polluted run was archived and cleared before the crypto-only run:
 
 ```powershell
